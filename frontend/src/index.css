@@ -1,0 +1,630 @@
+/* WeatherAI - Complete Modern Gradient Theme - Cleaned & Strict Palette */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+* {
+    box-sizing: border-box !important;
+}
+
+:root {
+    /* Strict Color Palette (White, Red, Blue, Orange, Green, Yellow, Black) */
+    scroll-behavior: smooth;
+    --white: #ffffff;
+    --black: #000000;
+    --blue: #2962ff;
+    --red: #ff3d00;
+    --orange: #ff9100;
+    --green: #00c853;
+    --yellow: #ffd600;
+
+    /* Gradients derived from strict palette (NO PURPLE) */
+    /* Primary: Bright Blue to Dark Blue */
+    --gradient-primary: linear-gradient(135deg, #2962ff 0%, #002266 100%);
+
+    /* Secondary: Orange to Red */
+    --gradient-secondary: linear-gradient(135deg, var(--orange) 0%, var(--red) 100%);
+
+    /* Success: Green centric */
+    --gradient-success: linear-gradient(135deg, var(--green) 0%, #009624 100%);
+
+    /* Warning: Yellow to Orange */
+    --gradient-warning: linear-gradient(135deg, var(--yellow) 0%, var(--orange) 100%);
+
+    /* Danger: Red centric */
+    --gradient-danger: linear-gradient(135deg, var(--red) 0%, #b22a00 100%);
+
+    /* Info: Blue to White-ish */
+    --gradient-info: linear-gradient(135deg, var(--blue) 0%, var(--white) 100%);
+
+    /* Dark: Black to Dark Blue */
+    --gradient-dark: linear-gradient(135deg, var(--black) 0%, #1a237e 100%);
+
+    /* Light: White to Light Yellow tint */
+    --gradient-light: linear-gradient(135deg, var(--white) 0%, #fffde7 100%);
+
+    /* Background Gradients */
+    --bg-gradient-main: linear-gradient(135deg, var(--blue) 0%, var(--black) 100%);
+
+    /* Glassmorphism */
+    --glass-bg: rgba(255, 255, 255, 0.15);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+
+    /* Spacing System */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-10: 2.5rem;
+    --space-12: 3rem;
+    --space-16: 4rem;
+
+    /* Border Radius */
+    --radius-sm: 0.375rem;
+    --radius: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
+    --radius-2xl: 2rem;
+    --radius-full: 9999px;
+
+    /* Global Typography */
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Dark Mode Overrides */
+body.dark-mode {
+    --glass-bg: rgba(0, 0, 0, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --bg-gradient-main: linear-gradient(135deg, #000000 0%, #1a237e 100%);
+}
+
+/* Base Styles */
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+    line-height: 1.6 !important;
+    color: var(--white) !important;
+    background: var(--bg-gradient-main) !important;
+    background-attachment: fixed !important;
+    min-height: 100vh !important;
+    margin: 0 !important;
+    overflow-x: hidden !important;
+}
+
+/* Text Colors utilizing strict palette */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--white);
+    margin-bottom: var(--space-4);
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+p,
+.lead {
+    color: rgba(255, 255, 255, 0.95);
+    margin-bottom: var(--space-4);
+    font-weight: 400;
+}
+
+/* Layout */
+.main-content {
+    padding-top: 5rem;
+    padding-bottom: 4rem;
+    min-height: calc(100vh - 300px);
+    position: relative;
+    z-index: 1;
+}
+
+/* Navigation */
+.navbar {
+    background: linear-gradient(135deg, rgba(41, 98, 255, 0.95) 0%, rgba(0, 0, 0, 0.95) 100%) !important;
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
+    padding: 0.25rem 0;
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+}
+
+.navbar-brand {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--white) !important;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.modern-nav-link {
+    color: rgba(255, 255, 255, 0.8) !important;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-full);
+    transition: all 0.3s ease;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.modern-nav-link:hover,
+.modern-nav-link.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--white) !important;
+}
+
+/* New: Section Containers (Islands) */
+.section-container {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-2xl);
+    padding: var(--space-8);
+    margin-bottom: var(--space-8);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Components: Cards */
+.card {
+    background: var(--glass-bg) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: var(--glass-shadow) !important;
+    border-radius: var(--radius-xl) !important;
+    margin-bottom: var(--space-6);
+    color: var(--white);
+    overflow: hidden;
+}
+
+.card-header {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border-bottom: 1px solid var(--glass-border) !important;
+    padding: var(--space-4) var(--space-6) !important;
+    font-weight: 700;
+    color: var(--white) !important;
+}
+
+/* Card Header Colors */
+.card-header.bg-primary {
+    background: var(--gradient-primary) !important;
+}
+
+.card-header.bg-success {
+    background: var(--gradient-success) !important;
+}
+
+.card-header.bg-warning {
+    background: var(--gradient-warning) !important;
+}
+
+.card-header.bg-danger {
+    background: var(--gradient-danger) !important;
+}
+
+.card-header.bg-info {
+    background: var(--gradient-info) !important;
+    color: var(--black) !important;
+}
+
+/* Buttons */
+.btn {
+    border: none;
+    border-radius: var(--radius-full);
+    padding: var(--space-3) var(--space-6);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary {
+    background: var(--gradient-primary);
+    color: var(--white) !important;
+}
+
+.btn-success {
+    background: var(--gradient-success);
+    color: var(--white) !important;
+}
+
+.btn-warning {
+    background: var(--gradient-warning);
+    color: var(--black) !important;
+}
+
+.btn-danger {
+    background: var(--gradient-danger);
+    color: var(--white) !important;
+}
+
+.btn-outline-light {
+    border: 1px solid var(--white);
+    color: var(--white);
+    background: transparent;
+}
+
+.btn-outline-light:hover {
+    background: var(--white);
+    color: var(--black) !important;
+}
+
+/* Forms & Inputs */
+.form-control {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border);
+    color: var(--white);
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+}
+
+.form-control:focus {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--white);
+    box-shadow: none;
+    color: var(--white);
+}
+
+.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Calendar Specific Styling */
+input[type="date"] {
+    color-scheme: dark;
+    background-color: transparent;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    border: none;
+}
+
+::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+    opacity: 0.8;
+}
+
+::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+/* Stats & Weather */
+.weather-stat {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    text-align: center;
+    margin-bottom: var(--space-4);
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    /* Clean gradient wording */
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: var(--white);
+    /* Fallback */
+}
+
+.stat-value.primary {
+    background-image: var(--gradient-primary);
+}
+
+.stat-value.success {
+    background-image: var(--gradient-success);
+}
+
+.stat-value.warning {
+    background-image: var(--gradient-warning);
+}
+
+.stat-value.danger {
+    background-image: var(--gradient-danger);
+}
+
+.weather-icon {
+    font-size: 4rem;
+    display: block;
+    margin: 0 auto var(--space-3);
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Layout Utilities */
+.container {
+    width: 100%;
+    padding: 0 var(--space-4);
+    margin: 0 auto;
+    max-width: 1200px;
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -15px;
+}
+
+.col-12,
+.col-md-6,
+.col-lg-4,
+.col-lg-8 {
+    padding: 0 15px;
+    position: relative;
+    width: 100%;
+}
+
+@media (min-width: 768px) {
+    .col-md-6 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+}
+
+@media (min-width: 992px) {
+    .col-lg-4 {
+        flex: 0 0 33.333333%;
+        max-width: 33.333333%;
+    }
+
+    .col-lg-8 {
+        flex: 0 0 66.666667%;
+        max-width: 66.666667%;
+    }
+}
+
+/* Footer */
+.footer {
+    border-top: 1px solid var(--glass-border);
+    padding: var(--space-8) 0;
+    margin-top: var(--space-12);
+    background: rgba(0, 0, 0, 0.5);
+    text-align: center;
+}
+
+.footer a {
+    color: var(--white);
+    text-decoration: none;
+    opacity: 0.7;
+}
+
+.footer a:hover {
+    opacity: 1;
+}
+
+/* Text Utilities using strict palette */
+.text-primary {
+    color: var(--blue) !important;
+}
+
+.text-success {
+    color: var(--green) !important;
+}
+
+.text-warning {
+    color: var(--orange) !important;
+}
+
+/* Orange is better for text visibility than yellow */
+.text-danger {
+    color: var(--red) !important;
+}
+
+.text-white {
+    color: var(--white) !important;
+}
+
+.text-muted {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Visibility Force Overrides */
+.card-title,
+.card-subtitle,
+.card-text,
+.table {
+    color: var(--white);
+}
+
+.table th {
+    color: var(--white);
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.table td {
+    color: var(--white);
+}
+
+/* Ensure outline buttons are visible */
+.btn-outline-primary,
+.btn-outline-secondary,
+.btn-outline-success,
+.btn-outline-danger,
+.btn-outline-warning,
+.btn-outline-info {
+    color: var(--white);
+    border-width: 2px;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-secondary:hover,
+.btn-outline-success:hover,
+.btn-outline-danger:hover,
+.btn-outline-warning:hover,
+.btn-outline-info:hover {
+    color: var(--white) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Tips visibility */
+.tip-text {
+    color: rgba(0, 0, 0, 0.8) !important;
+    /* Tips are in a light card usually */
+}
+
+/* If tip card is dark, invert */
+.card.bg-dark .tip-text,
+.card.bg-primary .tip-text,
+.section-container .tip-text {
+    color: var(--white) !important;
+}
+
+/* Fix for QuickActions specifically if inside simplified containers */
+.preset-name {
+    color: var(--white);
+    font-weight: 600;
+}
+
+.preset-details {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Sidebar & Layout */
+/* Sidebar & Layout */
+.sidebar-container {
+    width: 220px;
+    height: calc(100vh - 60px);
+    /* Adjust for Navbar */
+    position: fixed;
+    top: 60px;
+    /* Navbar height approx */
+    left: 0;
+    z-index: 1040;
+    overflow-y: auto;
+    background: rgba(33, 37, 41, 0.95);
+    /* Dark background */
+    backdrop-filter: blur(10px);
+    transition: transform 0.3s ease;
+}
+
+.main-content-wrapper {
+    margin-left: 220px;
+    padding-top: 80px;
+    /* Fix for fixed navbar overlap */
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: margin-left 0.3s ease;
+}
+
+@media (max-width: 991px) {
+    .sidebar-container {
+        transform: translateX(-100%);
+        top: 0;
+        /* Mobile sidebar usually full height over everything */
+        height: 100vh;
+        z-index: 1060;
+        /* On top of navbar in mobile */
+    }
+
+    .sidebar-container.show {
+        transform: translateX(0);
+    }
+
+    .main-content-wrapper {
+        margin-left: 0;
+    }
+}
+
+.hover-bg-primary:hover {
+    background-color: var(--bs-primary) !important;
+    color: white !important;
+}
+
+@media (min-width: 992px) {
+    .navbar {
+        left: 0 !important;
+        width: 100% !important;
+        z-index: 1050 !important;
+    }
+}
+
+/* Quick Start Section Styles */
+.quick-start-section {
+    position: relative;
+    background: transparent;
+}
+
+.step-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    height: 100%;
+    position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
+}
+
+.step-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.step-number {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--white);
+    background: rgba(255, 255, 255, 0.1);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-lg);
+    width: fit-content;
+}
+
+.step-icon {
+    font-size: 1.5rem;
+}
+
+.step-digit {
+    opacity: 0.8;
+}
+
+.step-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: var(--space-2);
+    color: var(--white);
+}
+
+.step-description {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: var(--space-4);
+    line-height: 1.5;
+}
+
+.step-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.option-badge {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-full);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Connector Line (Desktop) */
+.step-connector {
+    display: none;
+}
