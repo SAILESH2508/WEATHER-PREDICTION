@@ -119,7 +119,7 @@ const Sidebar = () => {
                 {/* Current Weather Widget (Integrated) */}
                 <div className="p-4 text-center border-bottom border-white border-opacity-10">
                     <div className="d-flex flex-column align-items-center">
-                        <span style={{ fontSize: '3rem' }}>{getWeatherIcon(currentWeather.condition)}</span>
+                        <span className="weather-icon" style={{ fontSize: '3rem', margin: 0 }}>{getWeatherIcon(currentWeather.condition)}</span>
                         <h2 className="text-white fw-bold mb-0 mt-2">{currentWeather.temperature}°C</h2>
                         <small className="text-white-50 text-uppercase fw-bold">{currentWeather.condition}</small>
                         <div className="mt-2 badge bg-white bg-opacity-10 text-white border border-white border-opacity-25">

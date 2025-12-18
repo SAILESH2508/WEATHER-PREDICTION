@@ -283,7 +283,7 @@ const WeatherDashboard = () => {
                                 ) : prediction ? (
                                     <div className="row align-items-center">
                                         <div className="col-md-4">
-                                            <div style={{ fontSize: '4rem' }}>
+                                            <div className="weather-icon">
                                                 {prediction.predicted_rainfall > 5 ? '🌧️' : prediction.predicted_rainfall > 0 ? '🌦️' : prediction.predicted_temperature > 30 ? '☀️' : '⛅'}
                                             </div>
                                             <div className="badge bg-success fs-6 mt-2">
