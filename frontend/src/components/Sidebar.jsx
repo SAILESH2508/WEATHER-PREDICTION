@@ -153,112 +153,104 @@ const Sidebar = ({ setLocationName }) => {
 
     return (
         <>
-            {/* Mobile Toggle */}
-            <button
-                className="btn btn-dark d-lg-none position-fixed start-0 m-3"
-                onClick={() => setIsMobileOpen(!isMobileOpen)}
-                style={{ zIndex: 2100, top: '70px', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)' }}
-            >
-                ☰
-            </button>
+            <>
+                {/* Sidebar Container with Theme Blend - Permanent Display */}
+                <div className="sidebar-container backdrop-blur border-end border-white border-opacity-10 d-flex flex-column">
 
-            {/* Sidebar Container with Theme Blend */}
-            <div className={`sidebar-container backdrop-blur border-end border-white border-opacity-10 d-flex flex-column ${isMobileOpen ? 'show' : ''}`}>
-
-                {/* Current Weather Widget (Integrated) */}
-                <div className="p-4 text-center border-bottom border-white border-opacity-10">
-                    <div className="d-flex flex-column align-items-center">
-                        <span className="weather-icon" style={{ fontSize: '3rem', margin: 0 }}>{getWeatherIcon(currentWeather.condition)}</span>
-                        <h2 className="text-white fw-bold mb-0 mt-2">{currentWeather.temperature}°C</h2>
-                        <small className="text-white text-uppercase fw-bold opacity-75">{currentWeather.condition}</small>
-                        <div className="mt-2 badge bg-white bg-opacity-10 text-white border border-white border-opacity-25">
-                            📍 {currentWeather.city}
-                        </div>
-
-                        {/* Extra Details to fill space */}
-                        <div className="d-flex justify-content-center gap-3 mt-3 w-100">
-                            <div className="d-flex flex-column align-items-center">
-                                <small className="text-white-50" style={{ fontSize: '0.7rem' }}>WIND</small>
-                                <span className="fw-bold">{currentWeather.wind_speed || 10} km/h</span>
+                    {/* Current Weather Widget (Integrated) */}
+                    <div className="p-4 text-center border-bottom border-white border-opacity-10">
+                        <div className="d-flex flex-column align-items-center">
+                            <span className="weather-icon" style={{ fontSize: '3rem', margin: 0 }}>{getWeatherIcon(currentWeather.condition)}</span>
+                            <h2 className="text-white fw-bold mb-0 mt-2">{currentWeather.temperature}°C</h2>
+                            <small className="text-white text-uppercase fw-bold opacity-75">{currentWeather.condition}</small>
+                            <div className="mt-2 badge bg-white bg-opacity-10 text-white border border-white border-opacity-25">
+                                📍 {currentWeather.city}
                             </div>
-                            <div className="d-flex flex-column align-items-center">
-                                <small className="text-white-50" style={{ fontSize: '0.7rem' }}>HUMIDITY</small>
-                                <span className="fw-bold">{currentWeather.humidity || 60}%</span>
+
+                            {/* Extra Details to fill space */}
+                            <div className="d-flex justify-content-center gap-3 mt-3 w-100">
+                                <div className="d-flex flex-column align-items-center">
+                                    <small className="text-white-50" style={{ fontSize: '0.7rem' }}>WIND</small>
+                                    <span className="fw-bold">{currentWeather.wind_speed || 10} km/h</span>
+                                </div>
+                                <div className="d-flex flex-column align-items-center">
+                                    <small className="text-white-50" style={{ fontSize: '0.7rem' }}>HUMIDITY</small>
+                                    <span className="fw-bold">{currentWeather.humidity || 60}%</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Global Search */}
-                <div className="p-3">
-                    <div className="position-relative">
-                        <input
-                            type="text"
-                            className="form-control text-white border-white border-opacity-25 search-input-glass"
-                            placeholder="🔍 Search City..."
-                            value={searchQuery}
-                            onChange={handleSearch}
-                            style={{ backgroundColor: 'rgba(0,0,0,0.3)', color: '#fff' }}
-                        />
-                        {searchResults.length > 0 && (
-                            <div className="search-results position-absolute w-100 bg-dark border border-white border-opacity-25 rounded mt-1 shadow-lg" style={{ zIndex: 99999, maxHeight: '300px', overflowY: 'auto', top: '100%', left: 0 }}>
-                                {searchResults.map((city, index) => (
-                                    <button
-                                        key={city.id || index}
-                                        className="btn btn-sm btn-link text-white text-decoration-none d-block w-100 text-start px-3 py-2 hover-bg-primary"
-                                        onClick={() => handleCitySelect(city)}
-                                    >
-                                        <span className="fw-bold">{city.name}</span>
-                                        <small className="d-block text-white-50">{city.country}</small>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Global Weather (Popular Cities) - Moved UP (Removed mt-auto) */}
-                <div className="px-3 py-2">
-                    <small className="text-uppercase text-white fw-bold px-2 opacity-75">Global Weather</small>
-                    <div className="d-flex flex-column gap-2 mt-2">
-                        {[
-                            { name: 'Coimbatore', country: 'India', lat: 11.0168, lon: 76.9558 },
-                            { name: 'New York', country: 'USA', lat: 40.71, lon: -74.01 },
-                            { name: 'London', country: 'UK', lat: 51.51, lon: -0.13 },
-                            { name: 'Tokyo', country: 'Japan', lat: 35.69, lon: 139.69 },
-                            { name: 'Sydney', country: 'Australia', lat: -33.87, lon: 151.21 }
-                        ].map((city) => (
-                            <button
-                                key={city.name}
-                                className="btn btn-sm text-start d-flex justify-content-between align-items-center gap-2 border border-white border-opacity-25 w-100 mb-1 hover-bg-white-10"
-                                style={{ color: 'white', transition: 'all 0.2s', background: 'transparent' }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                onClick={() => handleCitySelect({ name: city.name, latitude: city.lat, longitude: city.lon })}
-                            >
-                                <span className="fw-bold">{city.name}</span>
-                                <small className="opacity-75 text-white-50">{city.country}</small>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Tips */}
-                <div className="p-3 mt-2 border-top border-white border-opacity-10">
-                    <small className="text-uppercase text-white fw-bold opacity-75">Daily Tip</small>
-                    <div className="alert alert-info bg-opacity-90 border-white border-opacity-25 p-2 mt-2 mb-0">
-                        <div className="d-flex icon-link gap-2 align-items-center">
-                            <span>💡</span>
-                            <small className="text-dark fw-bold" style={{ fontSize: '0.85rem', lineHeight: '1.4' }}>
-                                High humidity (&gt;80%) can increase rainfall probability significantly.
-                            </small>
+                    {/* Global Search */}
+                    <div className="p-3">
+                        <div className="position-relative">
+                            <input
+                                type="text"
+                                className="form-control text-white border-white border-opacity-25 search-input-glass"
+                                placeholder="🔍 Search City..."
+                                value={searchQuery}
+                                onChange={handleSearch}
+                                style={{ backgroundColor: 'rgba(0,0,0,0.3)', color: '#fff' }}
+                            />
+                            {searchResults.length > 0 && (
+                                <div className="search-results position-absolute w-100 bg-dark border border-white border-opacity-25 rounded mt-1 shadow-lg" style={{ zIndex: 99999, maxHeight: '300px', overflowY: 'auto', top: '100%', left: 0 }}>
+                                    {searchResults.map((city, index) => (
+                                        <button
+                                            key={city.id || index}
+                                            className="btn btn-sm btn-link text-white text-decoration-none d-block w-100 text-start px-3 py-2 hover-bg-primary"
+                                            onClick={() => handleCitySelect(city)}
+                                        >
+                                            <span className="fw-bold">{city.name}</span>
+                                            <small className="d-block text-white-50">{city.country}</small>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
-                </div>
 
-            </div>
-        </>
-    );
+                    {/* Global Weather (Popular Cities) - Moved UP (Removed mt-auto) */}
+                    <div className="px-3 py-2">
+                        <small className="text-uppercase text-white fw-bold px-2 opacity-75">Global Weather</small>
+                        <div className="d-flex flex-column gap-2 mt-2">
+                            {[
+                                { name: 'Coimbatore', country: 'India', lat: 11.0168, lon: 76.9558 },
+                                { name: 'New York', country: 'USA', lat: 40.71, lon: -74.01 },
+                                { name: 'London', country: 'UK', lat: 51.51, lon: -0.13 },
+                                { name: 'Tokyo', country: 'Japan', lat: 35.69, lon: 139.69 },
+                                { name: 'Sydney', country: 'Australia', lat: -33.87, lon: 151.21 }
+                            ].map((city) => (
+                                <button
+                                    key={city.name}
+                                    className="btn btn-sm text-start d-flex justify-content-between align-items-center gap-2 border border-white border-opacity-25 w-100 mb-1 hover-bg-white-10"
+                                    style={{ color: 'white', transition: 'all 0.2s', background: 'transparent' }}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                    onClick={() => handleCitySelect({ name: city.name, latitude: city.lat, longitude: city.lon })}
+                                >
+                                    <span className="fw-bold">{city.name}</span>
+                                    <small className="opacity-75 text-white-50">{city.country}</small>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Tips */}
+                    <div className="p-3 mt-2 border-top border-white border-opacity-10">
+                        <small className="text-uppercase text-white fw-bold opacity-75">Daily Tip</small>
+                        <div className="alert alert-info bg-opacity-90 border-white border-opacity-25 p-2 mt-2 mb-0">
+                            <div className="d-flex icon-link gap-2 align-items-center">
+                                <span>💡</span>
+                                <small className="text-dark fw-bold" style={{ fontSize: '0.85rem', lineHeight: '1.4' }}>
+                                    High humidity (&gt;80%) can increase rainfall probability significantly.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </>
+            );
 };
 
-export default Sidebar;
+            export default Sidebar;

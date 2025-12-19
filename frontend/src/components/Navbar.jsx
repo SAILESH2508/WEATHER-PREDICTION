@@ -70,17 +70,7 @@ const Navbar = () => {
                     <span className="brand-text fw-bold text-white tracking-wide" style={{ letterSpacing: '0.5px' }}>WeatherAI</span>
                 </Link>
 
-                <button
-                    className={`navbar-toggler hamburger ${isOpen ? 'active' : ''}`}
-                    type="button"
-                    onClick={() => setIsOpen(!isOpen)}
-                >
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
-
-                <div className={`collapse navbar-collapse ${isOpen ? 'show' : ''}`} id="navbarNav">
+                <div className="navbar-collapse justify-content-end" id="navbarNav">
                     <ul className="navbar-nav mx-auto">
                         {navItems.map((item) => (
                             <li key={item.path} className="nav-item">
