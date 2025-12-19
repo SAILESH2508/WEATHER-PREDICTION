@@ -155,9 +155,9 @@ const Sidebar = ({ setLocationName }) => {
         <>
             {/* Mobile Toggle */}
             <button
-                className="btn btn-dark d-lg-none position-fixed top-0 start-0 m-3 z-3"
+                className="btn btn-dark d-lg-none position-fixed start-0 m-3"
                 onClick={() => setIsMobileOpen(!isMobileOpen)}
-                style={{ zIndex: 1050 }}
+                style={{ zIndex: 2100, top: '70px', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)' }}
             >
                 ☰
             </button>

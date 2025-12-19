@@ -85,7 +85,10 @@ CORS_ALLOWED_ORIGINS = [
 # Add environment variable origins
 COR_ORIGINS_ENV = os.environ.get('CORS_ALLOWED_ORIGINS')
 if COR_ORIGINS_ENV:
-    CORS_ALLOWED_ORIGINS.extend(COR_ORIGINS_ENV.split(','))
+    if COR_ORIGINS_ENV == '*':
+        CORS_ALLOW_ALL_ORIGINS = True
+    else:
+        CORS_ALLOWED_ORIGINS.extend(COR_ORIGINS_ENV.split(','))
 
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS[:]
 

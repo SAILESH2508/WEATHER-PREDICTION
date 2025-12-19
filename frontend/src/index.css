@@ -159,6 +159,18 @@ p,
     transition: all 0.3s ease;
 }
 
+@media (max-width: 991px) {
+    .navbar-collapse {
+        background: rgba(10, 10, 20, 0.95);
+        backdrop-filter: blur(20px);
+        padding: 1rem;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--glass-border);
+        margin-top: 1rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+}
+
 .navbar.scrolled {
     background: rgba(5, 5, 10, 0.9) !important;
     padding: 0.5rem 0;
@@ -567,7 +579,7 @@ input[type="date"] {
         top: 0;
         /* Mobile sidebar usually full height over everything */
         height: 100vh;
-        z-index: 1060;
+        z-index: 2050;
         /* On top of navbar in mobile */
     }
 
