@@ -36,7 +36,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-)$nf@u_c%+^b(p30o8uv_
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
-
+ALLOWED_HOSTS.append('.onrender.com') # Explicitly allow Render domains
 
 # Application definition
 
@@ -70,31 +70,16 @@ import warnings
 from pathlib import Path
 import dj_database_url # Import dj_database_url
 
-# ... (omitted lines)
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:5174",
-    "http://127.0.0.1:5174",
-    "http://localhost:5175",
-    "http://localhost:4173",
-    "http://127.0.0.1:4173",
-]
+# CORS Configuration - PERMISSIVE FOR DEBUGGING
+CORS_ALLOW_ALL_ORIGINS = True # Force allow all for now to unblock
+CORS_ALLOW_CREDENTIALS = True
 
-# Add environment variable origins
-COR_ORIGINS_ENV = os.environ.get('CORS_ALLOWED_ORIGINS')
-if COR_ORIGINS_ENV:
-    if COR_ORIGINS_ENV == '*':
-        CORS_ALLOW_ALL_ORIGINS = True
-    else:
-        CORS_ALLOWED_ORIGINS.extend(COR_ORIGINS_ENV.split(','))
-
-CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS[:]
+CSRF_TRUSTED_ORIGINS = ["https://*.onrender.com", "https://*.vercel.app"]
 
 ROOT_URLCONF = 'weather_system.urls'
 
-# ... (templates config)
+# ... (omitted lines)
 
 WSGI_APPLICATION = 'weather_system.wsgi.application'
 

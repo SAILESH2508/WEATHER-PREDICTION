@@ -137,29 +137,32 @@ const Navbar = () => {
                                     </button>
                                 }
                             />
-                            {/* Mobile Menu Date/Time Integration */}
-                            <div className="d-lg-none border-top border-white border-opacity-10 pt-3 mt-2">
-                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                    <span className="text-white-50 fw-bold">{time.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-                                    <span className="badge bg-white bg-opacity-10 text-white">{time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                </div>
-
-                                {/* Mobile Date Picker */}
-                                <div className="d-flex align-items-center gap-2">
-                                    <span className="text-white small">Navigate Date:</span>
-                                    <input
-                                        type="date"
-                                        className="form-control form-control-sm bg-white bg-opacity-10 text-white border-white border-opacity-10"
-                                        value={selectedDate}
-                                        onChange={(e) => handleDateSelect(e)}
-                                        style={{ maxWidth: '150px' }}
-                                    />
-                                </div>
-                            </div>
                         </div>
                     </div>
-                </nav >
-                );
+
+                    {/* Mobile Menu Date/Time Integration */}
+                    <div className="d-lg-none border-top border-white border-opacity-10 pt-3 mt-2">
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                            <span className="text-white-50 fw-bold">{time.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                            <span className="badge bg-white bg-opacity-10 text-white">{time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+
+                        {/* Mobile Date Picker */}
+                        <div className="d-flex align-items-center gap-2">
+                            <span className="text-white small">Navigate Date:</span>
+                            <input
+                                type="date"
+                                className="form-control form-control-sm bg-white bg-opacity-10 text-white border-white border-opacity-10"
+                                value={selectedDate}
+                                onChange={(e) => handleDateSelect(e)}
+                                style={{ maxWidth: '150px' }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav >
+    );
 };
 
-                export default Navbar;
+export default Navbar;
