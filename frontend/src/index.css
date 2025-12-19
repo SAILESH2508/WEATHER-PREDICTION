@@ -159,37 +159,6 @@ p,
     transition: all 0.3s ease;
 }
 
-@media (max-width: 991px) {
-
-    /* Force Navbar Expansion - NO HAMBURGER */
-    .navbar-collapse {
-        display: flex !important;
-        flex-basis: auto;
-        background: transparent !important;
-        padding: 0;
-        border: none;
-        margin: 0;
-        box-shadow: none;
-        opacity: 1 !important;
-        visibility: visible !important;
-    }
-
-    .navbar-toggler {
-        display: none !important;
-    }
-
-    .navbar-nav {
-        flex-direction: row !important;
-        gap: 15px;
-        align-items: center;
-        overflow-x: auto;
-        padding-bottom: 0;
-    }
-
-    .nav-item {
-        white-space: nowrap;
-    }
-}
 
 .navbar.scrolled {
     background: rgba(5, 5, 10, 0.9) !important;
@@ -562,59 +531,6 @@ input[type="date"] {
     color: rgba(255, 255, 255, 0.7);
 }
 
-/* Sidebar & Layout */
-/* Sidebar & Layout */
-.sidebar-container {
-    width: 220px;
-    height: calc(100vh - 60px);
-    /* Adjust for Navbar */
-    position: fixed;
-    top: 60px;
-    /* Navbar height approx */
-    left: 0;
-    z-index: 900;
-    /* Lower than Navbar (1000+) */
-    overflow-y: auto;
-    background: linear-gradient(180deg, rgba(41, 98, 255, 0.15) 0%, rgba(0, 0, 0, 0.3) 100%) !important;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 4px 0 30px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease;
-}
-
-.main-content-wrapper {
-    margin-left: 220px;
-    padding-top: 80px;
-    /* Fix for fixed navbar overlap */
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    transition: margin-left 0.3s ease;
-}
-
-@media (max-width: 991px) {
-    .sidebar-container {
-        transform: translateX(-100%);
-        top: 0;
-        /* Mobile sidebar usually full height over everything */
-        height: 100vh;
-        z-index: 2050;
-        /* On top of navbar in mobile */
-    }
-
-    .sidebar-container.show {
-        transform: translateX(0);
-    }
-
-    .main-content-wrapper {
-        margin-left: 0;
-    }
-
-    .main-content-wrapper {
-        margin-left: 0;
-    }
-}
 
 .hover-bg-primary:hover {
     background-color: var(--blue) !important;
@@ -801,83 +717,6 @@ input[type="date"] {
     outline: none;
 }
 
-/* Missing CSS Classes */
-
-/* Glass Card Component */
-.glass-card {
-    background: var(--glass-bg) !important;
-    border: 1px solid var(--glass-border) !important;
-    box-shadow: var(--glass-shadow) !important;
-    border-radius: var(--radius-xl) !important;
-    padding: var(--space-6);
-    margin-bottom: var(--space-6);
-    color: var(--white);
-    overflow: hidden;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-}
-
-/* Glass Button */
-.btn-glass {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    color: var(--white) !important;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
-}
-
-.btn-glass:hover {
-    background: rgba(255, 255, 255, 0.2) !important;
-    border-color: rgba(255, 255, 255, 0.4) !important;
-    color: var(--white) !important;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-}
-
-/* Hover Effects */
-.hover-bg-light-alpha:hover {
-    background-color: rgba(255, 255, 255, 0.1) !important;
-    transition: all 0.2s ease;
-}
-
-.hover-scale:hover {
-    transform: translateY(-2px) scale(1.02);
-    transition: all 0.3s ease;
-}
-
-/* Animations */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.animate-fade-in {
-    animation: fadeIn 0.6s ease-out forwards;
-}
-
-.animate-fade-in.delay-100 {
-    animation-delay: 0.1s;
-    opacity: 0;
-}
-
-.animate-fade-in.delay-200 {
-    animation-delay: 0.2s;
-    opacity: 0;
-}
-
-.animate-fade-in.delay-300 {
-    animation-delay: 0.3s;
-    opacity: 0;
-}
-
 /* Utility Classes */
 .mw-1000px {
     max-width: 1000px;
@@ -904,7 +743,6 @@ input[type="date"] {
     --tw-gradient-to: #ffffff;
 }
 
-/* Responsive Sidebar & Mobile Fixes */
 /* Responsive Layout System - Mobile, Tablet, Desktop, TV */
 
 @media (max-width: 991.98px) {

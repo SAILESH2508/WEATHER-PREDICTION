@@ -210,7 +210,7 @@ const Sidebar = ({ setLocationName }) => {
             {/* Global Weather (Popular Cities) */}
             <div className="px-3 py-2">
                 <small className="text-uppercase text-white fw-bold px-2 opacity-75">Global Weather</small>
-                <div className="d-flex flex-column gap-2 mt-2">
+                <div className="d-flex flex-column gap-2 mt-2 mobile-horizontal-scroll">
                     {[
                         { name: 'Coimbatore', country: 'India', lat: 11.0168, lon: 76.9558 },
                         { name: 'New York', country: 'USA', lat: 40.71, lon: -74.01 },
