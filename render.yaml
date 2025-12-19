@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: weather-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd backend && gunicorn weather_system.wsgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.11
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "false"
+      - key: ALLOWED_HOSTS
+        value: "*"
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false # User must add this manually after deploying frontend
