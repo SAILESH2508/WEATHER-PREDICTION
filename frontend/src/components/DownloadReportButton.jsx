@@ -72,7 +72,7 @@ const DownloadReportButton = ({ weatherData, predictionData, hourlyData, locatio
             // For simplicity, we'll take the first 12-24 entries or based on current index if possible.
             // Here we just take the first 12 entries for brevity in the PDF.
 
-            let startIdx = 0;
+
             // Simple logic: If time is ISO string, find closest current hour. 
             // Assuming hourlyData.time corresponds to now onwards or full day.
             // We'll just take the first 10 rows to not overflow the page too much initially.

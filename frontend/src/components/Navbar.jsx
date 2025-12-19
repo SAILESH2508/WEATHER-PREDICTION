@@ -1,17 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
-import { API_BASE_URL } from '../config';
 
 const Navbar = () => {
     const navigate = useNavigate();
-    const [isOpen, setIsOpen] = useState(false);
+
     const [time, setTime] = useState(new Date());
-    const [currentWeather, setCurrentWeather] = useState({ temperature: '--', condition: 'loading' });
     const [selectedDate, setSelectedDate] = useState('');
-    const dateInputRef = useRef(null);
+
     const location = useLocation();
 
     // Clock Effect
@@ -21,24 +19,7 @@ const Navbar = () => {
     }, []);
 
     // Fetch Current Weather
-    useEffect(() => {
-        const fetchWeather = async () => {
-            try {
-                const response = await axios.get(`${API_BASE_URL}/api/current/`);
-                setCurrentWeather({
-                    temperature: Math.round(response.data.temperature),
-                    condition: response.data.description
-                });
-            } catch (error) {
-                console.error('Failed to fetch weather:', error);
-                setCurrentWeather({ temperature: '--', condition: 'offline' });
-            }
-        };
 
-        fetchWeather();
-        const weatherTimer = setInterval(fetchWeather, 30000);
-        return () => clearInterval(weatherTimer);
-    }, []);
 
 
 
@@ -77,7 +58,7 @@ const Navbar = () => {
                                 <Link
                                     className={`nav-link modern-nav-link ${isActive(item.path) ? 'active' : ''}`}
                                     to={item.path}
-                                    onClick={() => setIsOpen(false)}
+
                                 >
                                     <span className="nav-icon me-1">{item.icon}</span>
                                     <span className="nav-text">{item.label}</span>

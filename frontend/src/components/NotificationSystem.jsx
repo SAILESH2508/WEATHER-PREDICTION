@@ -1,22 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const NotificationSystem = () => {
   const [notifications, setNotifications] = useState([]);
 
-  const addNotification = (message, type = 'info', duration = 5000) => {
+  const removeNotification = useCallback((id) => {
+    setNotifications(prev => prev.filter(notif => notif.id !== id));
+  }, []);
+
+  const addNotification = useCallback((message, type = 'info', duration = 5000) => {
     const id = Date.now();
     const notification = { id, message, type, duration };
-    
+
     setNotifications(prev => [...prev, notification]);
-    
+
     setTimeout(() => {
       removeNotification(id);
     }, duration);
-  };
-
-  const removeNotification = (id) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
-  };
+  }, [removeNotification]);
 
   const getIcon = (type) => {
     switch (type) {
@@ -44,7 +44,7 @@ const NotificationSystem = () => {
     return () => {
       delete window.showNotification;
     };
-  }, []);
+  }, [addNotification]);
 
   return (
     <div className="notification-container">

@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 
 const Sidebar = ({ setLocationName }) => {
     const navigate = useNavigate();
-    const location = useLocation();
+
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
+
 
     const [currentWeather, setCurrentWeather] = useState({ temperature: '--', condition: 'loading', city: 'Loading...' });
 
@@ -110,7 +110,7 @@ const Sidebar = ({ setLocationName }) => {
             }
         };
         fetchWeather();
-    }, []);
+    }, [setLocationName]);
 
     const getWeatherIcon = (c) => {
         if (!c) return '🌤️';
@@ -123,10 +123,7 @@ const Sidebar = ({ setLocationName }) => {
         return '🌤️';
     };
 
-    // Close sidebar on route change (mobile)
-    useEffect(() => {
-        setIsMobileOpen(false);
-    }, [location]);
+
 
     const handleSearch = async (e) => {
         const query = e.target.value;

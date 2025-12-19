@@ -20,7 +20,6 @@ export const getWeatherTheme = (conditionCode, isDay = true) => {
             border: 'rgba(255, 255, 255, 0.4)'
         },
         clearNight: {
-            background: 'linear-gradient(135deg, #00416A 0%, #E4E5E6 0%, #00416A 100%)', // Deep Navy Blue (No Purple)
             background: 'linear-gradient(135deg, #141E30 0%, #243B55 100%)', // Royal Night Blue
             text: '#ffffff',
             glass: 'rgba(0, 0, 0, 0.35)',
@@ -28,7 +27,6 @@ export const getWeatherTheme = (conditionCode, isDay = true) => {
         },
 
         cloudyDay: {
-            background: 'linear-gradient(135deg, #5D4157 0%, #A8CABA 100%)', // Muted Grey/Green
             background: 'linear-gradient(135deg, #606c88 0%, #3f4c6b 100%)', // Cool Grey
             text: '#ffffff',
             glass: 'rgba(0, 0, 0, 0.2)',

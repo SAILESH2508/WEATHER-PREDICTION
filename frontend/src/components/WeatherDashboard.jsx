@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Chart } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, BarController, Title, Tooltip, Legend } from 'chart.js';
@@ -14,14 +14,14 @@ import { getWeatherTheme } from '../utils/weatherTheme';
 
 const WeatherDashboard = ({ locationName }) => {
     const location = useLocation();
-    const queryParams = new URLSearchParams(location.search);
+
 
     // State
     const [currentWeather, setCurrentWeather] = useState(null);
     const [hourlyData, setHourlyData] = useState(null);
     const [dailyData, setDailyData] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+
     const [networkError, setNetworkError] = useState(false);
 
     // Default Location: Coimbatore
@@ -39,9 +39,24 @@ const WeatherDashboard = ({ locationName }) => {
 
     const [prediction, setPrediction] = useState(null);
 
+    const handlePredictManual = useCallback(async (t, h, r, w) => {
+        try {
+            const res = await axios.post(`${API_BASE_URL}/api/predict_lstm/`, {
+                temperature: t,
+                humidity: h,
+                rainfall: r,
+                wind_speed: w
+            });
+            setPrediction(res.data);
+        } catch (err) {
+            console.error("Prediction Error", err);
+        }
+    }, []);
+
     // Initial Fetch
     useEffect(() => {
         const fetchWeather = async () => {
+            const queryParams = new URLSearchParams(location.search);
             try {
                 let lat = queryParams.get('lat');
                 let lon = queryParams.get('lon');
@@ -159,12 +174,12 @@ const WeatherDashboard = ({ locationName }) => {
             } catch (err) {
                 console.error("Dashboard Fetch Error", err);
                 if (!err.response) setNetworkError(true);
-                setError("Failed to load weather data.");
+
             }
         };
 
         fetchWeather();
-    }, [location.search]);
+    }, [location.search, handlePredictManual]);
 
     // Theme Effect
     useEffect(() => {
@@ -184,19 +199,7 @@ const WeatherDashboard = ({ locationName }) => {
         setInputs(prev => ({ ...prev, [name]: parseFloat(value) }));
     };
 
-    const handlePredictManual = async (t, h, r, w) => {
-        try {
-            const res = await axios.post(`${API_BASE_URL}/api/predict_lstm/`, {
-                temperature: t,
-                humidity: h,
-                rainfall: r,
-                wind_speed: w
-            });
-            setPrediction(res.data);
-        } catch (err) {
-            console.error("Prediction Error", err);
-        }
-    };
+
 
     const handlePredict = async (e) => {
         if (e) e.preventDefault();

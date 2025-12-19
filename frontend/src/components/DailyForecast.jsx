@@ -40,9 +40,8 @@ const DailyForecast = ({ data, locationName }) => {
                     const wind = Math.round(data.windspeed_10m_max?.[index] || 0);
 
                     // Calculate range position relative to fixed global range
-                    const globalMin = Math.min(...minTemps);
-                    const globalMax = Math.max(...maxTemps);
-                    const range = globalMax - globalMin || 1;
+
+
 
                     return (
                         <div key={day} className="d-flex align-items-center justify-content-between p-2 rounded hover-scale-sm mb-1" style={{ transition: 'all 0.2s', cursor: 'default', background: 'rgba(0, 0, 0, 0.2)' }}>
