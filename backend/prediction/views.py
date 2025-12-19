@@ -16,6 +16,8 @@ import tensorflow as tf
 tf.get_logger().setLevel('ERROR')
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
+from django.shortcuts import render
+import requests
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -169,10 +171,21 @@ class PredictLSTMView(APIView):
                     pred_temp = model_lstm.predict(input_seq, verbose=0)
                 
                 result_temp = float(pred_temp[0][0])
+                result_rain = float(max(0, result_temp * 0.1)) # Estimate based on temp for now if rain model not separate for LSTM
+
+                # Generate alerts (Consistent with Standard ML)
+                alerts = []
+                if result_temp > 35:
+                    alerts.append("High Temperature Warning")
+                if result_rain > 10:
+                    alerts.append("Heavy Rainfall Warning")
+                elif result_rain > 5:
+                    alerts.append("Moderate Rainfall Warning")
                 
                 return Response({
                     'predicted_temperature': round(result_temp, 2),
-                    'predicted_rainfall': round(max(0, result_temp * 0.1), 2),  # Estimate
+                    'predicted_rainfall': round(result_rain, 2),
+                    'alerts': alerts,
                     'method': 'LSTM (Deep Learning)',
                     'model_type': 'Neural Network'
                 })
@@ -315,16 +328,33 @@ class CurrentWeatherView(APIView):
         lon = request.query_params.get('lon')
         city = request.query_params.get('city', 'Your Location')
         
-        # Default to New York if no coordinates provided
+        headers = {
+            'User-Agent': 'WeatherAI/1.0 (Educational Project)'
+        }
+        
+        # Default to Coimbatore if no coordinates provided
         if not lat or not lon:
-            lat = 40.7128
-            lon = -74.0060
-            city = "New York (Default)"
+            lat = 11.0168
+            lon = 76.9558
+            city = "Coimbatore, Tamil Nadu, India"
+        
+        # If coordinates provided but city is generic, try to reverse geocode
+        elif city in ['Your Location', 'My Location', 'Loading...']:
+            try:
+                # Internal reverse geocode call
+                geo_url = f"https://geocoding-api.open-meteo.com/v1/reverse?latitude={lat}&longitude={lon}&count=1&language=en&format=json"
+                geo_res = requests.get(geo_url, headers=headers, timeout=2) # Short timeout to not block
+                if geo_res.status_code == 200:
+                    results = geo_res.json().get('results', [])
+                    if results:
+                        city = results[0].get('name', city)
+            except:
+                pass # Fail silently and keep generic name if this fails
             
         try:
             # Open-Meteo API call
-            url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,rain,wind_speed_10m,weather_code&timezone=auto"
-            res = requests.get(url)
+            url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,rain,wind_speed_10m,weather_code&hourly=temperature_2m,weather_code,rain&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&timezone=auto"
+            res = requests.get(url, headers=headers, timeout=5)
             data = res.json()
             
             if 'error' in data:
@@ -349,6 +379,9 @@ class CurrentWeatherView(APIView):
                 'rainfall': current.get('rain'),
                 'wind_speed': current.get('wind_speed_10m'),
                 'description': description,
+                'code': code,  # Pass raw code for frontend theme logic
+                'hourly': data.get('hourly', {}),
+                'daily': data.get('daily', {}),
                 'timestamp': pd.Timestamp.now().isoformat()
             }
             
@@ -399,6 +432,38 @@ class MetricsView(APIView):
             return Response({
                 'error': f'Metrics error: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CitySearchView(APIView):
+    """Proxy for Open-Meteo Geocoding Search."""
+    def get(self, request):
+        query = request.query_params.get('name')
+        if not query:
+            return Response({'results': []})
+            
+        try:
+            url = f"https://geocoding-api.open-meteo.com/v1/search?name={query}&count=50&language=en&format=json"
+            headers = {'User-Agent': 'WeatherAI/1.0 (Educational Project)'}
+            res = requests.get(url, headers=headers, timeout=5)
+            return Response(res.json())
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ReverseGeocodeView(APIView):
+    """Proxy for Open-Meteo Reverse Geocoding."""
+    def get(self, request):
+        lat = request.query_params.get('latitude')
+        lon = request.query_params.get('longitude')
+        
+        if not lat or not lon:
+            return Response({'error': 'Missing coordinates'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            url = f"https://geocoding-api.open-meteo.com/v1/reverse?latitude={lat}&longitude={lon}&count=1&language=en&format=json"
+            headers = {'User-Agent': 'WeatherAI/1.0 (Educational Project)'}
+            res = requests.get(url, headers=headers, timeout=5)
+            return Response(res.json())
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # Initialize models when module is loaded
 load_models()

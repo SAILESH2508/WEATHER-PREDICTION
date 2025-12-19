@@ -7,13 +7,13 @@ import webbrowser
 
 def run_backend():
     print("🚀 Starting Backend (Waitress)...")
-    os.chdir('backend')
-    subprocess.run([sys.executable, '-m', 'waitress', '--listen=127.0.0.1:8000', 'weather_system.wsgi:application'])
+    # Use cwd argument instead of os.chdir to avoid race conditions
+    subprocess.run([sys.executable, '-m', 'waitress', '--listen=127.0.0.1:8000', 'weather_system.wsgi:application'], cwd='backend')
 
 def run_frontend():
     print("🚀 Starting Frontend (Preview)...")
-    os.chdir('frontend')
-    subprocess.run(['npm', 'run', 'preview'])
+    # Use shell=True for Windows 'npm' resolution
+    subprocess.run(['npm', 'run', 'preview'], cwd='frontend', shell=True)
 
 if __name__ == "__main__":
     print("🌍 Simulating Production Environment...")

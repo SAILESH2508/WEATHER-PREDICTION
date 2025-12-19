@@ -9,45 +9,56 @@
     /* Strict Color Palette (White, Red, Blue, Orange, Green, Yellow, Black) */
     scroll-behavior: smooth;
     --white: #ffffff;
-    --black: #000000;
     --blue: #2962ff;
     --red: #ff3d00;
-    --orange: #ff9100;
-    --green: #00c853;
-    --yellow: #ffd600;
+}
 
-    /* Gradients derived from strict palette (NO PURPLE) */
-    /* Primary: Bright Blue to Dark Blue */
-    --gradient-primary: linear-gradient(135deg, #2962ff 0%, #002266 100%);
+/* Hide spin buttons in number inputs */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
 
-    /* Secondary: Orange to Red */
+input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+:root {
+
+    /* Extended Palette (Restoring Vibrancy) */
+    --purple: #6200ea;
+    --deep-purple: #3700b3;
+    --indigo: #304ffe;
+    --cyan: #00b8d4;
+    --teal: #00bfa5;
+    --pink: #c51162;
+
+    /* Restored Gradients */
+    --gradient-primary: linear-gradient(135deg, #2962ff 0%, #0039cb 100%);
     --gradient-secondary: linear-gradient(135deg, var(--orange) 0%, var(--red) 100%);
-
-    /* Success: Green centric */
     --gradient-success: linear-gradient(135deg, var(--green) 0%, #009624 100%);
-
-    /* Warning: Yellow to Orange */
+    --gradient-info: linear-gradient(135deg, #2979ff 0%, #2962ff 100%);
     --gradient-warning: linear-gradient(135deg, var(--yellow) 0%, var(--orange) 100%);
+    --gradient-danger: linear-gradient(135deg, #d50000 0%, #b71c1c 100%);
 
-    /* Danger: Red centric */
-    --gradient-danger: linear-gradient(135deg, var(--red) 0%, #b22a00 100%);
-
-    /* Info: Blue to White-ish */
-    --gradient-info: linear-gradient(135deg, var(--blue) 0%, var(--white) 100%);
-
-    /* Dark: Black to Dark Blue */
-    --gradient-dark: linear-gradient(135deg, var(--black) 0%, #1a237e 100%);
-
-    /* Light: White to Light Yellow tint */
-    --gradient-light: linear-gradient(135deg, var(--white) 0%, #fffde7 100%);
+    /* Vibrant/AI Gradients */
+    --gradient-purple: linear-gradient(135deg, #6200ea 0%, #3700b3 100%);
+    --gradient-cyan: linear-gradient(135deg, #00b8d4 0%, #006064 100%);
+    --gradient-pink: linear-gradient(135deg, #c51162 0%, #880e4f 100%);
+    --gradient-royal: linear-gradient(135deg, #2962ff 0%, #6200ea 100%);
+    /* Blue to Purple */
 
     /* Background Gradients */
-    --bg-gradient-main: linear-gradient(135deg, var(--blue) 0%, var(--black) 100%);
+    --bg-gradient-main: linear-gradient(135deg, #1A2980 0%, #26D0CE 100%);
+    /* Cool default */
 
-    /* Glassmorphism */
-    --glass-bg: rgba(255, 255, 255, 0.15);
-    --glass-border: rgba(255, 255, 255, 0.2);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    /* Glassmorphism - DARKENED FOR CONTRAST */
+    --glass-bg: rgba(0, 0, 0, 0.35);
+    /* Increased darkness from white-alpha to black-alpha */
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 
     /* Spacing System */
     --space-1: 0.25rem;
@@ -72,6 +83,9 @@
 
     /* Global Typography */
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+
+    /* Default Variables */
+    --text-main: #ffffff;
 }
 
 /* Dark Mode Overrides */
@@ -81,16 +95,19 @@ body.dark-mode {
     --bg-gradient-main: linear-gradient(135deg, #000000 0%, #1a237e 100%);
 }
 
+
+
 /* Base Styles */
 body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
     line-height: 1.6 !important;
-    color: var(--white) !important;
+    color: var(--text-main) !important;
     background: var(--bg-gradient-main) !important;
     background-attachment: fixed !important;
     min-height: 100vh !important;
     margin: 0 !important;
     overflow-x: hidden !important;
+    /* Text shadow removed for cleaner look */
 }
 
 /* Text Colors utilizing strict palette */
@@ -99,11 +116,15 @@ h2,
 h3,
 h4,
 h5,
+h1,
+h2,
+h3,
+h4,
+h5,
 h6 {
-    color: var(--white);
+    color: var(--text-main);
     margin-bottom: var(--space-4);
     font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 p,
@@ -124,16 +145,24 @@ p,
 
 /* Navigation */
 .navbar {
-    background: linear-gradient(135deg, rgba(41, 98, 255, 0.95) 0%, rgba(0, 0, 0, 0.95) 100%) !important;
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--glass-border);
-    padding: 0.25rem 0;
+    background: rgba(10, 10, 20, 0.7) !important;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0.75rem 0;
     position: fixed !important;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 1000;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    z-index: 2000 !important;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.navbar.scrolled {
+    background: rgba(5, 5, 10, 0.9) !important;
+    padding: 0.5rem 0;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
 
 .navbar-brand {
@@ -146,18 +175,29 @@ p,
 }
 
 .modern-nav-link {
-    color: rgba(255, 255, 255, 0.8) !important;
-    padding: var(--space-2) var(--space-4);
+    color: rgba(255, 255, 255, 0.7) !important;
+    padding: 0.5rem 1.25rem;
     border-radius: var(--radius-full);
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 500;
+    font-size: 0.95rem;
+    position: relative;
+    overflow: hidden;
 }
 
-.modern-nav-link:hover,
-.modern-nav-link.active {
-    background: rgba(255, 255, 255, 0.2);
+.modern-nav-link:hover {
     color: var(--white) !important;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+.modern-nav-link.active {
+    background: linear-gradient(135deg, rgba(41, 98, 255, 0.8) 0%, rgba(41, 98, 255, 0.4) 100%);
+    color: var(--white) !important;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(41, 98, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* New: Section Containers (Islands) */
@@ -500,11 +540,14 @@ input[type="date"] {
     top: 60px;
     /* Navbar height approx */
     left: 0;
-    z-index: 1040;
+    z-index: 900;
+    /* Lower than Navbar (1000+) */
     overflow-y: auto;
-    background: rgba(33, 37, 41, 0.95);
-    /* Dark background */
-    backdrop-filter: blur(10px);
+    background: linear-gradient(180deg, rgba(41, 98, 255, 0.15) 0%, rgba(0, 0, 0, 0.3) 100%) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 4px 0 30px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease;
 }
 
@@ -535,20 +578,19 @@ input[type="date"] {
     .main-content-wrapper {
         margin-left: 0;
     }
+
+    .main-content-wrapper {
+        margin-left: 0;
+    }
 }
 
 .hover-bg-primary:hover {
-    background-color: var(--bs-primary) !important;
-    color: white !important;
+    background-color: var(--blue) !important;
+    color: var(--white) !important;
+    cursor: pointer;
 }
 
-@media (min-width: 992px) {
-    .navbar {
-        left: 0 !important;
-        width: 100% !important;
-        z-index: 1050 !important;
-    }
-}
+/* Quick Start Section Styles */
 
 /* Quick Start Section Styles */
 .quick-start-section {
@@ -627,4 +669,247 @@ input[type="date"] {
 /* Connector Line (Desktop) */
 .step-connector {
     display: none;
+}
+
+/* Glassmorphism Navbar */
+.navbar-enhanced {
+    background: linear-gradient(180deg, rgba(41, 98, 255, 0.15) 0%, rgba(0, 0, 0, 0.3) 100%) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1rem 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-enhanced.scrolled {
+    background: linear-gradient(180deg, rgba(41, 98, 255, 0.85) 0%, rgba(0, 0, 0, 0.9) 100%) !important;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+}
+
+.modern-nav-link {
+    font-weight: 500;
+    padding: 0.5rem 1rem !important;
+    border-radius: 50px;
+    transition: all 0.2s ease;
+}
+
+.modern-nav-link:hover,
+.modern-nav-link.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff !important;
+}
+
+/* Glassmorphism Datepicker Theme */
+.react-datepicker {
+    background: rgba(16, 18, 27, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    font-family: 'Inter', sans-serif !important;
+    color: #fff !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5) !important;
+    border-radius: var(--radius-md) !important;
+    z-index: 9999 !important;
+}
+
+.react-datepicker__header {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-top-left-radius: var(--radius-md) !important;
+    border-top-right-radius: var(--radius-md) !important;
+}
+
+.react-datepicker__current-month,
+.react-datepicker-time__header,
+.react-datepicker-year-header,
+.react-datepicker__day-name {
+    color: white !important;
+    font-weight: 600;
+}
+
+.react-datepicker__day {
+    color: rgba(255, 255, 255, 0.9) !important;
+    transition: all 0.2s ease;
+}
+
+.react-datepicker__day:hover {
+    background-color: rgba(41, 98, 255, 0.3) !important;
+    border-radius: 50% !important;
+    color: #fff !important;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+    background: linear-gradient(135deg, #2962ff 0%, #0039cb 100%) !important;
+    border-radius: 50% !important;
+    color: #fff !important;
+    box-shadow: 0 4px 10px rgba(41, 98, 255, 0.4);
+}
+
+.react-datepicker__triangle {
+    display: none !important;
+}
+
+.react-datepicker__navigation-icon::before {
+    border-color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.custom-datepicker-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1rem;
+    padding: 0;
+    cursor: pointer;
+    text-align: center;
+}
+
+.custom-datepicker-input:focus {
+    outline: none;
+}
+
+/* Missing CSS Classes */
+
+/* Glass Card Component */
+.glass-card {
+    background: var(--glass-bg) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: var(--glass-shadow) !important;
+    border-radius: var(--radius-xl) !important;
+    padding: var(--space-6);
+    margin-bottom: var(--space-6);
+    color: var(--white);
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* Glass Button */
+.btn-glass {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: var(--white) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.btn-glass:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+    color: var(--white) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Hover Effects */
+.hover-bg-light-alpha:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    transition: all 0.2s ease;
+}
+
+.hover-scale:hover {
+    transform: translateY(-2px) scale(1.02);
+    transition: all 0.3s ease;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+}
+
+.animate-fade-in.delay-100 {
+    animation-delay: 0.1s;
+    opacity: 0;
+}
+
+.animate-fade-in.delay-200 {
+    animation-delay: 0.2s;
+    opacity: 0;
+}
+
+.animate-fade-in.delay-300 {
+    animation-delay: 0.3s;
+    opacity: 0;
+}
+
+/* Utility Classes */
+.mw-1000px {
+    max-width: 1000px;
+}
+
+.tracking-wide {
+    letter-spacing: 0.05em;
+}
+
+.z-3 {
+    z-index: 3 !important;
+}
+
+/* Progress Bar Gradient Fix */
+.bg-gradient-to-r {
+    background: linear-gradient(to right, rgba(147, 197, 253, 0.8), rgba(255, 255, 255, 0.8));
+}
+
+.from-blue-300 {
+    --tw-gradient-from: #93c5fd;
+}
+
+.to-white {
+    --tw-gradient-to: #ffffff;
+}
+
+/* Responsive Sidebar & Mobile Fixes */
+@media (max-width: 991.98px) {
+    .sidebar-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 280px;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+        z-index: 1045;
+        background: rgba(16, 18, 27, 0.98) !important;
+        backdrop-filter: blur(20px);
+    }
+
+    .sidebar-container.show {
+        transform: translateX(0);
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .sidebar-container.show::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 280px;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+    }
+
+    .btn-dark.d-lg-none {
+        z-index: 1050 !important;
+    }
+}
+
+@media (min-width: 992px) {
+    .sidebar-container {
+        padding-top: 0;
+    }
 }

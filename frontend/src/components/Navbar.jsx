@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+import { API_BASE_URL } from '../config';
 
 const Navbar = () => {
+    const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
     const [time, setTime] = useState(new Date());
     const [currentWeather, setCurrentWeather] = useState({ temperature: '--', condition: 'loading' });
@@ -20,7 +24,7 @@ const Navbar = () => {
     useEffect(() => {
         const fetchWeather = async () => {
             try {
-                const response = await axios.get('http://127.0.0.1:8000/api/current/');
+                const response = await axios.get(`${API_BASE_URL}/api/current/`);
                 setCurrentWeather({
                     temperature: Math.round(response.data.temperature),
                     condition: response.data.description
@@ -36,19 +40,16 @@ const Navbar = () => {
         return () => clearInterval(weatherTimer);
     }, []);
 
-    const getWeatherIcon = (condition) => {
-        if (condition.toLowerCase().includes('rain')) return '🌧️';
-        if (condition.toLowerCase().includes('sunny') || condition.toLowerCase().includes('clear')) return '☀️';
-        if (condition.toLowerCase().includes('cloud')) return '☁️';
-        if (condition.toLowerCase().includes('storm')) return '⛈️';
-        if (condition.toLowerCase().includes('snow')) return '❄️';
-        return '🌤️';
-    };
+
 
     const handleDateSelect = (e) => {
         const date = e.target.value;
         setSelectedDate(date);
-        console.log(`Prediction requested for: ${date}`);
+
+        // Update URL to trigger dashboard refresh or state
+        const params = new URLSearchParams(location.search);
+        params.set('date', date);
+        navigate(`${location.pathname}?${params.toString()}`);
     };
 
     const isActive = (path) => location.pathname === path;
@@ -56,17 +57,17 @@ const Navbar = () => {
     const navItems = [
         { path: '/', label: 'Home', icon: '🏠' },
         { path: '/dashboard', label: 'Live Forecast', icon: '🌤️' },
-        { path: '/simulator', label: 'AI Simulator', icon: '🧪' },
-        { path: '/analytics', label: 'Analytics', icon: '📊' },
         { path: '/about', label: 'About', icon: 'ℹ️' }
     ];
 
     return (
         <nav className="navbar navbar-expand-lg navbar-dark fixed-top navbar-enhanced">
             <div className="container">
-                <Link className="navbar-brand d-flex align-items-center" to="/">
-                    <span className="brand-icon">🌦️</span>
-                    <span className="brand-text">WeatherAI</span>
+                <Link className="navbar-brand d-flex align-items-center gap-2" to="/">
+                    <div className="brand-icon-wrapper bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                        <span className="fs-4">🌦️</span>
+                    </div>
+                    <span className="brand-text fw-bold text-white tracking-wide" style={{ letterSpacing: '0.5px' }}>WeatherAI</span>
                 </Link>
 
                 <button
@@ -100,8 +101,8 @@ const Navbar = () => {
 
 
                         {/* Clock (Time) */}
-                        <div className="d-none d-lg-flex align-items-center bg-white bg-opacity-10 rounded-pill px-3 py-1 border border-white border-opacity-10">
-                            <span className="fw-bold text-white" style={{ fontSize: '0.8rem', fontVariantNumeric: 'tabular-nums' }}>
+                        <div className="d-none d-lg-flex align-items-center bg-white bg-opacity-10 rounded-pill px-3 py-2 border border-white border-opacity-10 shadow-sm">
+                            <span className="fw-bold text-white mb-0" style={{ fontSize: '0.9rem', fontVariantNumeric: 'tabular-nums' }}>
                                 {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                             </span>
                         </div>
@@ -109,27 +110,32 @@ const Navbar = () => {
                         {/* Date (Full Date with Day) */}
                         <div className="d-none d-lg-flex align-items-center bg-white bg-opacity-10 rounded-pill px-3 py-1 border border-white border-opacity-10">
                             <span className="text-white-50 fw-medium" style={{ fontSize: '0.8rem' }}>
-                                {time.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                {time.toLocaleDateString([], { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
                             </span>
                         </div>
 
                         {/* Calendar Picker */}
-                        <div className="position-relative">
-                            <button
-                                className="btn btn-sm bg-white bg-opacity-10 rounded-circle border border-white border-opacity-10 d-flex align-items-center justify-content-center p-0"
-                                style={{ width: '28px', height: '28px' }}
-                                onClick={() => dateInputRef.current.showPicker()}
-                                title="Select Date"
-                            >
-                                <span style={{ fontSize: '0.9rem' }}>📅</span>
-                            </button>
-                            <input
-                                type="date"
-                                ref={dateInputRef}
-                                value={selectedDate}
-                                onChange={handleDateSelect}
-                                className="position-absolute opacity-0"
-                                style={{ top: '100%', right: 0, width: 0, height: 0, colorScheme: 'dark' }}
+                        <div className="position-relative theme-datepicker-wrapper">
+                            <DatePicker
+                                selected={selectedDate}
+                                onChange={(date) => {
+                                    setSelectedDate(date);
+                                    if (date) handleDateSelect({ target: { value: date.toISOString().split('T')[0] } });
+                                }}
+                                dateFormat="yyyy-MM-dd"
+                                className="custom-datepicker-input"
+                                placeholderText="Select Date"
+                                withPortal
+                                portalId="root-portal"
+                                customInput={
+                                    <button
+                                        className="btn btn-sm bg-white bg-opacity-10 rounded-circle border border-white border-opacity-10 d-flex align-items-center justify-content-center p-0"
+                                        style={{ width: '28px', height: '28px' }}
+                                        title="Select Date"
+                                    >
+                                        <span style={{ fontSize: '0.9rem' }}>📅</span>
+                                    </button>
+                                }
                             />
                         </div>
                     </div>

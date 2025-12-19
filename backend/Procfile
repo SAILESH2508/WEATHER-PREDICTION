@@ -1,1 +1,1 @@
-web: waitress-serve --listen=*:8000 weather_system.wsgi:application
+web: gunicorn weather_system.wsgi --log-file -

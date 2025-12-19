@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 import { Line } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -38,11 +39,11 @@ const Simulator = () => {
         const fetchPrediction = async () => {
             try {
                 // Get Standard Prediction
-                const resPred = await axios.post('http://127.0.0.1:8000/api/predict/', inputs);
+                const resPred = await axios.post(`${API_BASE_URL}/api/predict/`, inputs);
                 setPrediction(resPred.data);
 
                 // Get Classification
-                const resCond = await axios.post('http://127.0.0.1:8000/api/predict_condition/', inputs);
+                const resCond = await axios.post(`${API_BASE_URL}/api/predict_condition/`, inputs);
                 setCondition(resCond.data.condition);
             } catch (err) {
                 console.error("Simulator API Error", err);

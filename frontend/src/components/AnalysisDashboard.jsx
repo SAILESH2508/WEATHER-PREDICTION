@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 import { Bar, Radar } from 'react-chartjs-2';
 import { Chart as ChartJS, RadialLinearScale, ArcElement, Tooltip, Legend } from 'chart.js';
 
@@ -11,7 +12,7 @@ const AnalysisDashboard = () => {
     useEffect(() => {
         const fetchMetrics = async () => {
             try {
-                const response = await axios.get('http://127.0.0.1:8000/api/metrics/');
+                const response = await axios.get(`${API_BASE_URL}/api/metrics/`);
                 setMetrics(response.data);
             } catch (err) {
                 console.error("Failed to fetch metrics", err);
