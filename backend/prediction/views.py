@@ -30,7 +30,7 @@ import pandas as pd
 from django.conf import settings
 
 # Import Keras after TensorFlow configuration
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 
 # Load models
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
