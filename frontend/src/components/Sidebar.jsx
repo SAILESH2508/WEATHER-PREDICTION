@@ -96,7 +96,7 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                 if (autoNavigate) alert("Unable to retrieve your location. Please check browser permissions.");
                 fetchDefault();
             },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 }
+            { enableHighAccuracy: false, timeout: 30000, maximumAge: 300000 }
         );
     };
 
