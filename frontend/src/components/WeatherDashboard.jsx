@@ -137,24 +137,8 @@ const WeatherDashboard = ({ locationName }) => {
 
                 setCurrentWeather(weatherData);
                 setHourlyData(weatherData.hourly);
-                setDailyData(res.data.daily); // Keep full original daily data for 7-day list if possible? 
-                // Actually res.data.daily was modified above if date selected. 
-                // Let's reset dailyData to original for the 7-day list to stay intact? 
-                // User probably wants to see context. 
-                // But AstroWidget needs specific day. 
-                // Let's pass 'slicedDaily' to AstroWidget via currentWeather, but keep 'res.data.daily' (refresh copy) for DailyForecast list.
-                // Re-fetch or copy deep? JSON parse/stringify is easy way.
-
                 // Better approach: Don't mutate res.data daily for the 'dailyData' state used by 7-day list.
                 if (targetDate && isHistory) {
-                    // We already mutated weatherData.daily. 
-                    // We should rely on the fresh fetch or careful slicing.
-                    // The code above mutated `weatherData` which IS `res.data`.
-                    // So we effectively lost the past days if index > 0.
-                    // That's fine for AstroWidget. 
-                    // For 7-Day forecast, maybe we want to see the future from that date?
-                    // Or just all days. 
-                    // Let's stick to the mutation for now, it effectively "focuses" the dashboard on that period.
                     setDailyData(weatherData.daily);
                 } else {
                     setDailyData(weatherData.daily);
@@ -213,7 +197,6 @@ const WeatherDashboard = ({ locationName }) => {
 
     return (
         <div className="container-fluid mt-5 pt-3">
-            {/* Header / Network Status */}
             {/* Header / Network Status */}
             {networkError && (
                 <div className="alert alert-warning border-0 bg-warning bg-opacity-10 text-warning mb-4 fade show">
@@ -376,7 +359,7 @@ const WeatherDashboard = ({ locationName }) => {
                     </div>
 
                     {/* Hourly Chart Section - MOVED TO BOTTOM */}
-                    <div className="section-container p-4 animate-fade-in delay-100" style={{ background: 'linear-gradient(135deg, rgba(0, 200, 83, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%)', border: '1px solid rgba(0, 200, 83, 0.4)' }}>
+                    <div className="section-container p-4 animate-fade-in delay-100 mb-4" style={{ background: 'linear-gradient(135deg, rgba(0, 200, 83, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%)', border: '1px solid rgba(0, 200, 83, 0.4)' }}>
                         <div className="d-flex justify-content-between align-items-center mb-4">
                             <div>
                                 <h2 className="mb-0 text-white">
@@ -401,7 +384,7 @@ const WeatherDashboard = ({ locationName }) => {
 
                 {/* Right Column: 7-Day Forecast & Astro Details */}
                 <div className="col-lg-4">
-                    <div className="section-container p-4 animate-fade-in delay-200" style={{ background: 'linear-gradient(135deg, rgba(255, 145, 0, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%)', border: '1px solid rgba(255, 145, 0, 0.4)' }}>
+                    <div className="section-container p-4 animate-fade-in delay-200 mb-4" style={{ background: 'linear-gradient(135deg, rgba(255, 145, 0, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%)', border: '1px solid rgba(255, 145, 0, 0.4)' }}>
                         {/* Daily Forecast Component */}
                         <DailyForecast data={dailyData} locationName={currentWeather?.city || locationName} />
                     </div>

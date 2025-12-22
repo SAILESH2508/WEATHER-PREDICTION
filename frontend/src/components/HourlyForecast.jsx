@@ -96,8 +96,8 @@ const HourlyForecast = ({ data }) => {
                 display: true,
                 position: 'right',
                 grid: { display: false },
-                ticks: { color: 'rgba(54, 162, 235, 0.8)' },
-                title: { display: true, text: 'Rain (mm)', color: '#36A2EB' },
+                ticks: { color: 'rgba(255, 255, 255, 0.8)' },
+                title: { display: true, text: 'Rain (mm)', color: 'white' },
                 min: 0,
             },
         },
@@ -105,10 +105,7 @@ const HourlyForecast = ({ data }) => {
     };
 
     return (
-        <div className="glass-card h-100 d-flex flex-column">
-            <h5 className="mb-2 text-white">
-                <span className="me-2">📉</span> 24-Hour Trend
-            </h5>
+        <div className="h-100 d-flex flex-column">
             <div className="flex-grow-1 w-100" style={{ minHeight: '200px' }}>
                 <Chart type='bar' data={chartData} options={options} />
             </div>

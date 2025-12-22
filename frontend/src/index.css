@@ -20,6 +20,12 @@ input[type=number]::-webkit-outer-spin-button {
     margin: 0;
 }
 
+.App {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
 input[type=number] {
     -moz-appearance: textfield;
     appearance: textfield;
@@ -321,12 +327,24 @@ p,
 }
 
 /* Calendar Specific Styling */
+/* Calendar Specific Styling */
 input[type="date"] {
     color-scheme: dark;
-    background-color: transparent;
-    color: white;
+    background-color: transparent !important;
+    color: #ffffff !important;
     font-family: 'Inter', sans-serif;
     border: none;
+    outline: none;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+}
+
+/* Force dark override for inputs */
+.form-control.text-white {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 ::-webkit-calendar-picker-indicator {
@@ -730,6 +748,42 @@ input[type="date"] {
     z-index: 3 !important;
 }
 
+/* New Design Utilities */
+.hover-transform {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-transform:hover {
+    transform: translateY(-2px);
+}
+
+.hover-scale {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 1rem;
+    /* --radius-lg */
+}
+
+.text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.bg-glass {
+    background: rgba(20, 20, 35, 0.7) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+}
+
 /* Progress Bar Gradient Fix */
 .bg-gradient-to-r {
     background: linear-gradient(to right, rgba(147, 197, 253, 0.8), rgba(255, 255, 255, 0.8));
@@ -743,58 +797,89 @@ input[type="date"] {
     --tw-gradient-to: #ffffff;
 }
 
+/* Custom Scrollbar for Glass Theme */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+/* Light Theme Scrollbar for Reverted Sidebar */
+.custom-scrollbar-light::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar-light::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.custom-scrollbar-light::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.custom-scrollbar-light::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.4);
+}
+
 /* Responsive Layout System - Mobile, Tablet, Desktop, TV */
 
 @media (max-width: 991.98px) {
-    /* MOBILE & TABLET (<992px) - STACKED LAYOUT */
+    /* MOBILE & TABLET (<992px) - OFFCANVAS LAYOUT */
 
-    /* Sidebar: Becomes a top content block */
+    /* Sidebar: Hidden by default, slides in */
     .sidebar-container {
-        position: relative !important;
-        /* Stack naturally */
+        position: fixed !important;
         top: 0 !important;
         left: 0 !important;
-        width: 100% !important;
-        height: auto !important;
-        /* Fit content */
-        max-height: 400px;
-        /* Limit height if needed */
-        transform: none !important;
-        /* Always visible */
-        z-index: 1000;
+        width: 280px !important;
+        /* Fixed width drawer */
+        height: 100vh !important;
+        max-height: 100vh !important;
+        transform: translateX(-100%) !important;
+        /* Hide off-screen */
+        z-index: 2000;
+        /* background: rgba(16, 18, 27, 0.98) !important; REMOVED for light theme support */
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         overflow-y: auto;
-        /* Scroll internally if huge */
-        border-right: none;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        margin-top: 56px;
-        /* Offset for fixed navbar */
-        display: block !important;
-        /* Force show */
-        background: rgba(16, 18, 27, 0.98) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        margin-top: 0 !important;
+        display: flex !important;
+        flex-direction: column;
+        padding-top: 60px;
+        /* Space for close button or just aesthetics */
     }
 
     .sidebar-container.show {
-        transform: none;
-        box-shadow: none;
+        transform: translateX(0) !important;
+        /* Slide in */
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
     }
 
-    /* Remove Backdrop */
-    .sidebar-container.show::before {
-        display: none !important;
-    }
-
-    /* Hide the mobile toggle button since sidebar is always there */
-    .btn-dark.d-lg-none {
-        display: none !important;
-    }
-
-    /* Reset Main Content Margin */
+    /* Main Content: Full width, no margin */
     .main-content-wrapper {
         margin-left: 0;
-        padding-top: 20px;
-        /* Small gap after sidebar */
+        padding-top: 70px;
+        /* Navbar height + buffer */
         width: 100%;
     }
+
+    /* Ensure navbar stays on top but below sidebar if sidebar z-index is higher? 
+       Actually standard is Sidebar > Navbar for drawers usually, OR Sidebar under Navbar.
+       Here we set Sidebar z-index 2000, Navbar is usually 1000. So Sidebar covers Navbar. */
 }
 
 @media (min-width: 992px) {
@@ -802,14 +887,15 @@ input[type="date"] {
 
     /* Sidebar: Always visible, fixed width */
     .sidebar-container {
+        position: fixed;
         transform: translateX(0) !important;
-        top: 65px;
-        /* Below Navbar */
-        height: calc(100vh - 65px);
+        top: 70px;
+        /* Below Navbar (70px height) */
+        height: calc(100vh - 70px);
         width: 240px;
         z-index: 800;
         /* Below Navbar */
-        background: linear-gradient(180deg, rgba(41, 98, 255, 0.1) 0%, rgba(0, 0, 0, 0.2) 100%) !important;
+        /* background: linear-gradient(180deg, rgba(41, 98, 255, 0.1) 0%, rgba(0, 0, 0, 0.2) 100%) !important; REMOVED */
         box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
     }
 
@@ -863,4 +949,29 @@ input[type="date"] {
         margin: 0;
         padding: 0;
     }
+}
+
+/* Animations - restoring missing classes */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.8s ease-out forwards;
+}
+
+.delay-100 {
+    animation-delay: 100ms;
+}
+
+.delay-200 {
+    animation-delay: 200ms;
 }

@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 
-const Navbar = () => {
+const Navbar = ({ toggleSidebar, isSidebarOpen }) => {
     const navigate = useNavigate();
-
     const [time, setTime] = useState(new Date());
-    const [selectedDate, setSelectedDate] = useState('');
-
+    const [selectedDate, setSelectedDate] = useState(null);
     const location = useLocation();
 
     // Clock Effect
@@ -18,17 +15,13 @@ const Navbar = () => {
         return () => clearInterval(timer);
     }, []);
 
-    // Fetch Current Weather
-
-
-
-
     const handleDateSelect = (e) => {
         const date = e.target.value;
-        setSelectedDate(date);
+        const newDate = new Date(date);
+        setSelectedDate(newDate);
 
         // Update URL to trigger dashboard refresh or state
-        const params = new URLSearchParams(location.search);
+        const params = new URLSearchParams(window.location.search);
         params.set('date', date);
         navigate(`${location.pathname}?${params.toString()}`);
     };
@@ -42,97 +35,108 @@ const Navbar = () => {
     ];
 
     return (
-        <nav className="navbar navbar-expand-lg navbar-dark fixed-top navbar-enhanced">
-            <div className="container">
-                <Link className="navbar-brand d-flex align-items-center gap-2" to="/">
-                    <div className="brand-icon-wrapper bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
-                        <span className="fs-4">🌦️</span>
-                    </div>
-                    <span className="brand-text fw-bold text-white tracking-wide" style={{ letterSpacing: '0.5px' }}>WeatherAI</span>
-                </Link>
+        <nav className="navbar navbar-expand-lg fixed-top p-0 transition-all"
+            style={{
+                height: '70px',
+                zIndex: 1050,
+                background: 'rgba(10, 15, 30, 0.6)',
+                backdropFilter: 'blur(15px)',
+                borderBottom: '1px solid rgba(255,255,255,0.05)'
+            }}>
+            <div className="container-fluid px-3 px-lg-4 h-100">
+                <div className="d-flex align-items-center h-100">
+                    {/* Mobile Toggle Button (Visible only on mobile) */}
+                    <button
+                        className="btn btn-link text-white d-lg-none me-3 p-0 border-0 hover-scale"
+                        onClick={toggleSidebar}
+                        style={{ fontSize: '1.75rem', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
+                        aria-label="Toggle Menu"
+                    >
+                        {isSidebarOpen ? '✕' : '☰'}
+                    </button>
 
-                <div className="navbar-collapse justify-content-end" id="navbarNav">
-                    <ul className="navbar-nav mx-auto">
+                    {/* Brand / Logo */}
+                    <Link className="navbar-brand d-flex align-items-center gap-3" to="/">
+                        <div className="brand-icon-wrapper rounded-circle d-flex align-items-center justify-content-center shadow-lg"
+                            style={{
+                                width: '42px',
+                                height: '42px',
+                                background: 'linear-gradient(135deg, #2962ff 0%, #0039cb 100%)',
+                                border: '1px solid rgba(255,255,255,0.2)'
+                            }}>
+                            <span className="fs-5">🌦️</span>
+                        </div>
+                        <div className="d-flex flex-column justify-content-center">
+                            <span className="brand-text fw-bold text-white tracking-wide"
+                                style={{ fontSize: '1.25rem', letterSpacing: '1px', textShadow: '0 2px 5px rgba(0,0,0,0.5)' }}>
+                                Weather<span className="text-primary">AI</span>
+                            </span>
+                        </div>
+                    </Link>
+                </div>
+
+                {/* Desktop Menu */}
+                <div className="collapse navbar-collapse justify-content-end h-100" id="navbarNav">
+                    {/* Navigation Links */}
+                    <ul className="navbar-nav mx-auto d-none d-lg-flex gap-2">
                         {navItems.map((item) => (
                             <li key={item.path} className="nav-item">
                                 <Link
-                                    className={`nav-link modern-nav-link ${isActive(item.path) ? 'active' : ''}`}
+                                    className={`nav-link px-3 py-2 rounded-pill d-flex align-items-center gap-2 fw-medium ${isActive(item.path) ? 'bg-primary text-white shadow-sm' : 'text-white text-opacity-75 hover-bg-white-10'}`}
                                     to={item.path}
-
+                                    style={{ transition: 'all 0.2s ease', fontSize: '0.95rem' }}
                                 >
-                                    <span className="nav-icon me-1">{item.icon}</span>
-                                    <span className="nav-text">{item.label}</span>
+                                    <span style={{ fontSize: '1.1rem' }}>{item.icon}</span>
+                                    <span>{item.label}</span>
                                 </Link>
                             </li>
                         ))}
                     </ul>
 
-                    <div className="d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                        {/* Current Weather - Moved to Sidebar */}
+                    {/* Right Tools: Time, Date, DatePicker */}
+                    <div className="d-flex align-items-center gap-3">
 
-
-                        {/* Clock (Time) */}
-                        <div className="d-none d-lg-flex align-items-center bg-white bg-opacity-10 rounded-pill px-3 py-2 border border-white border-opacity-10 shadow-sm">
-                            <span className="fw-bold text-white mb-0" style={{ fontSize: '0.9rem', fontVariantNumeric: 'tabular-nums' }}>
+                        {/* Clock Information */}
+                        <div className="d-none d-lg-flex flex-column align-items-end text-end me-2">
+                            <span className="fw-bold text-white tracking-wide" style={{ fontSize: '1rem', lineHeight: '1', fontVariantNumeric: 'tabular-nums' }}>
                                 {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                             </span>
-                        </div>
-
-                        {/* Date (Full Date with Day) */}
-                        <div className="d-none d-lg-flex align-items-center bg-white bg-opacity-10 rounded-pill px-3 py-1 border border-white border-opacity-10">
-                            <span className="text-white-50 fw-medium" style={{ fontSize: '0.8rem' }}>
-                                {time.toLocaleDateString([], { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                            <span className="text-white-50 small" style={{ fontSize: '0.75rem' }}>
+                                {time.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}
                             </span>
                         </div>
 
-                        {/* Calendar Picker */}
-                        <div className="position-relative theme-datepicker-wrapper">
+                        {/* Calendar Picker (Desktop) */}
+                        <div className="position-relative theme-datepicker-wrapper d-none d-lg-block">
                             <DatePicker
                                 selected={selectedDate}
                                 onChange={(date) => {
                                     setSelectedDate(date);
-                                    if (date) handleDateSelect({ target: { value: date.toISOString().split('T')[0] } });
+                                    if (date) {
+                                        const year = date.getFullYear();
+                                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                                        const day = String(date.getDate()).padStart(2, '0');
+                                        handleDateSelect({ target: { value: `${year}-${month}-${day}` } });
+                                    }
                                 }}
                                 dateFormat="yyyy-MM-dd"
-                                className="custom-datepicker-input"
-                                placeholderText="Select Date"
                                 withPortal
                                 portalId="root-portal"
                                 customInput={
                                     <button
-                                        className="btn btn-sm bg-white bg-opacity-10 rounded-circle border border-white border-opacity-10 d-flex align-items-center justify-content-center p-0"
-                                        style={{ width: '28px', height: '28px' }}
+                                        className="btn btn-icon btn-glass rounded-circle d-flex align-items-center justify-content-center hover-transform shadow-sm"
+                                        style={{ width: '40px', height: '40px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)' }}
                                         title="Select Date"
                                     >
-                                        <span style={{ fontSize: '0.9rem' }}>📅</span>
+                                        <span style={{ fontSize: '1.2rem' }}>📅</span>
                                     </button>
                                 }
                             />
                         </div>
                     </div>
-
-                    {/* Mobile Menu Date/Time Integration */}
-                    <div className="d-lg-none border-top border-white border-opacity-10 pt-3 mt-2">
-                        <div className="d-flex justify-content-between align-items-center mb-3">
-                            <span className="text-white-50 fw-bold">{time.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-                            <span className="badge bg-white bg-opacity-10 text-white">{time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-
-                        {/* Mobile Date Picker */}
-                        <div className="d-flex align-items-center gap-2">
-                            <span className="text-white small">Navigate Date:</span>
-                            <input
-                                type="date"
-                                className="form-control form-control-sm bg-white bg-opacity-10 text-white border-white border-opacity-10"
-                                value={selectedDate}
-                                onChange={(e) => handleDateSelect(e)}
-                                style={{ maxWidth: '150px' }}
-                            />
-                        </div>
-                    </div>
                 </div>
             </div>
-        </nav >
+        </nav>
     );
 };
 
