@@ -9,13 +9,7 @@ warnings.filterwarnings('ignore', category=FutureWarning)
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 # Configure TensorFlow logging
-logging.getLogger('tensorflow').setLevel(logging.ERROR)
-
-import tensorflow as tf
-# Disable TensorFlow warnings
-tf.get_logger().setLevel('ERROR')
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-
+import logging
 from django.shortcuts import render
 import requests
 from rest_framework.views import APIView
@@ -25,12 +19,9 @@ import pickle
 import json
 import numpy as np
 import random
-import joblib
-import pandas as pd
 from django.conf import settings
 
-# Import Keras after TensorFlow configuration
-from tensorflow.keras.models import load_model
+# Heavy imports moved inside get_models() for lazy loading
 
 # Load models path
 MODEL_DIR = os.path.join(settings.BASE_DIR, 'ml_models')
@@ -49,6 +40,15 @@ def get_models():
         return _MODEL_CACHE['models']
     
     try:
+        import joblib
+        import pandas as pd
+        import tensorflow as tf
+        from tensorflow.keras.models import load_model
+        
+        # Configure TensorFlow inside lazy loader
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+        tf.get_logger().setLevel('ERROR')
+        
         print("Lazy Loading ML models...")
         models = {}
         
