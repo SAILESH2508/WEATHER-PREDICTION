@@ -23,6 +23,7 @@ const WeatherDashboard = ({ locationName }) => {
     const [loading, setLoading] = useState(false);
 
     const [networkError, setNetworkError] = useState(false);
+    const [retryCount, setRetryCount] = useState(0);
 
     // Default Location: Coimbatore
     const DEFAULT_LAT = 11.0168;
@@ -156,14 +157,22 @@ const WeatherDashboard = ({ locationName }) => {
                 handlePredictManual(weatherData.temperature, weatherData.humidity, weatherData.rainfall || 0, weatherData.wind_speed || 10);
 
             } catch (err) {
-                console.error("Dashboard Fetch Error", err);
-                if (!err.response) setNetworkError(true);
+                console.error("Dashboard Fetch Error:", err.message || err);
 
+                // Retry logic for transient network errors
+                if (!err.response && retryCount < 3) {
+                    console.log(`Retrying fetch... (${retryCount + 1}/3)`);
+                    setTimeout(() => {
+                        setRetryCount(prev => prev + 1);
+                    }, 2000);
+                } else if (!err.response) {
+                    setNetworkError(true);
+                }
             }
         };
 
         fetchWeather();
-    }, [location.search, handlePredictManual]);
+    }, [location.search, handlePredictManual, retryCount]);
 
     // Theme Effect
     useEffect(() => {

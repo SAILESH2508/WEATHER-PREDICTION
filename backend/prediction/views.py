@@ -288,5 +288,13 @@ class ReverseGeocodeView(APIView):
     def get(self, request):
         lat = request.query_params.get('latitude')
         lon = request.query_params.get('longitude')
-        res = requests.get(f"https://geocoding-api.open-meteo.com/v1/reverse?latitude={lat}&longitude={lon}&count=1").json()
-        return Response(res)
+        try:
+            res = requests.get(
+                f"https://geocoding-api.open-meteo.com/v1/reverse?latitude={lat}&longitude={lon}&count=1",
+                timeout=10
+            )
+            res.raise_for_status()
+            return Response(res.json())
+        except Exception as e:
+            print(f"Reverse geocode error: {e}")
+            return Response({'results': [], 'error': str(e)})

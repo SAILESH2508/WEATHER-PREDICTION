@@ -45,7 +45,7 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                     let cityName = '';
                     try {
                         const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 15000);
+                        const timeoutId = setTimeout(() => controller.abort(), 30000); // Extended to 30s for Render cold starts
 
                         const geoRes = await axios.get(
                             `${API_BASE_URL}/api/reverse-geocode/?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}`,
@@ -59,9 +59,12 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                             if (result.admin1 && result.admin1 !== result.name) parts.push(result.admin1);
                             if (result.country_code) parts.push(result.country_code.toUpperCase());
                             cityName = parts.join(', ');
+                        } else if (geoRes.data.error) {
+                            console.warn("Backend geocoding reported error:", geoRes.data.error);
                         }
                     } catch (geoErr) {
-                        console.warn("Reverse geocoding failed", geoErr.message);
+                        const message = geoErr.name === 'AbortError' ? 'Geocoding timed out' : geoErr.message;
+                        console.warn("Reverse geocoding failed:", message);
                     }
 
                     const cityParam = cityName || '';
