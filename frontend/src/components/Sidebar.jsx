@@ -65,6 +65,7 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                     } catch (geoErr) {
                         const message = geoErr.name === 'AbortError' ? 'Geocoding timed out' : geoErr.message;
                         console.warn("Reverse geocoding failed:", message);
+                        // No specific retry for geocoding alone as the outer block handles overall location fetch retry
                     }
 
                     const cityParam = cityName || '';
@@ -87,8 +88,16 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                     }
 
                 } catch (error) {
-                    console.error("Weather fetch error:", error);
-                    fetchDefault();
+                    console.error("Weather fetch error:", error.message);
+                    const status = error.response?.status;
+                    if ((status === 503 || status === 504 || !error.response) && (window._sidebarRetryCount || 0) < 5) {
+                        window._sidebarRetryCount = (window._sidebarRetryCount || 0) + 1;
+                        console.log(`Sidebar retrying... (${window._sidebarRetryCount}/5)`);
+                        setTimeout(() => handleLocationClick(autoNavigate), 5000);
+                    } else {
+                        window._sidebarRetryCount = 0;
+                        fetchDefault();
+                    }
                 }
             },
             (error) => {

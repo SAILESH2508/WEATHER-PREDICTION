@@ -40,7 +40,7 @@ const WeatherDashboard = ({ locationName }) => {
 
     const [prediction, setPrediction] = useState(null);
 
-    const handlePredictManual = useCallback(async (t, h, r, w) => {
+    const handlePredictManual = useCallback(async (t, h, r, w, retry = 0) => {
         try {
             const res = await axios.post(`${API_BASE_URL}/api/predict_lstm/`, {
                 temperature: t,
@@ -50,7 +50,13 @@ const WeatherDashboard = ({ locationName }) => {
             });
             setPrediction(res.data);
         } catch (err) {
-            console.error("Prediction Error", err);
+            console.error("Prediction Error:", err.message);
+            // Retry on 503/504 (Render cold start or busy)
+            const status = err.response?.status;
+            if ((status === 503 || status === 504 || !err.response) && retry < 5) {
+                console.log(`Retrying prediction... (${retry + 1}/5)`);
+                setTimeout(() => handlePredictManual(t, h, r, w, retry + 1), 5000);
+            }
         }
     }, []);
 
@@ -159,12 +165,15 @@ const WeatherDashboard = ({ locationName }) => {
             } catch (err) {
                 console.error("Dashboard Fetch Error:", err.message || err);
 
-                // Retry logic for transient network errors
-                if (!err.response && retryCount < 3) {
-                    console.log(`Retrying fetch... (${retryCount + 1}/3)`);
+                const status = err.response?.status;
+                const isRetryable = status === 503 || status === 504 || !err.response;
+
+                if (isRetryable && retryCount < 5) {
+                    console.log(`Retrying fetch... (${retryCount + 1}/5)`);
+                    setNetworkError(true); // Show connecting status
                     setTimeout(() => {
                         setRetryCount(prev => prev + 1);
-                    }, 2000);
+                    }, 5000);
                 } else if (!err.response) {
                     setNetworkError(true);
                 }
