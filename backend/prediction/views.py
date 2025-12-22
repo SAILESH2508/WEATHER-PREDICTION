@@ -289,12 +289,23 @@ class ReverseGeocodeView(APIView):
         lat = request.query_params.get('latitude')
         lon = request.query_params.get('longitude')
         try:
+            # Using BigDataCloud reverse-geocode-client API (Free, no key required for client-side/small volume)
             res = requests.get(
-                f"https://geocoding-api.open-meteo.com/v1/reverse?latitude={lat}&longitude={lon}&count=1",
+                f"https://api.bigdatacloud.net/data/reverse-geocode-client?latitude={lat}&longitude={lon}&localityLanguage=en",
                 timeout=10
             )
             res.raise_for_status()
-            return Response(res.json())
+            data = res.json()
+            
+            # Map to the format the frontend expects
+            mapped_data = {
+                'results': [{
+                    'name': data.get('city') or data.get('locality') or data.get('principalSubdivision'),
+                    'admin1': data.get('principalSubdivision'),
+                    'country_code': data.get('countryCode')
+                }]
+            }
+            return Response(mapped_data)
         except Exception as e:
             print(f"Reverse geocode error: {e}")
             return Response({'results': [], 'error': str(e)})

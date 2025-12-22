@@ -3,7 +3,7 @@ services:
     name: weather-api
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: cd backend && gunicorn weather_system.wsgi:application
+    startCommand: cd backend && gunicorn weather_system.wsgi:application --timeout 120
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.11

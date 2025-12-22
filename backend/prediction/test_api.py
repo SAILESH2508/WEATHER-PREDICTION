@@ -9,11 +9,16 @@ class ApiTests(TestCase):
     @patch('requests.get')
     def test_reverse_geocode_success(self, mock_get):
         mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = {'results': [{'name': 'Test City'}]}
+        mock_get.return_value.json.return_value = {
+            'city': 'Coimbatore',
+            'principalSubdivision': 'Tamil Nadu',
+            'countryCode': 'IN'
+        }
         
         response = self.client.get('/api/reverse-geocode/?latitude=11.0&longitude=77.0')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['results'][0]['name'], 'Test City')
+        self.assertEqual(response.data['results'][0]['name'], 'Coimbatore')
+        self.assertEqual(response.data['results'][0]['admin1'], 'Tamil Nadu')
 
     @patch('requests.get')
     def test_reverse_geocode_timeout(self, mock_get):
