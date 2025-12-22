@@ -32,33 +32,28 @@ from django.conf import settings
 # Import Keras after TensorFlow configuration
 from tensorflow.keras.models import load_model
 
-# Load models
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MODEL_DIR = os.path.join(BASE_DIR, 'ml_models')
+# Load models path
+MODEL_DIR = os.path.join(settings.BASE_DIR, 'ml_models')
 
-# Global variables for models
-model_temp = None
-model_rain = None
-model_lstm = None
-model_classifier = None
-scaler = None
+# Global cache for models
+_MODEL_CACHE = {
+    'loaded': False,
+    'error': None,
+    'models': {}
+}
 
-# Ensemble Models
-rf_temp = None
-rf_rain = None
-lr_temp = None
-lr_rain = None
-
-def load_models():
-    """Load all ML models with proper error handling and logging suppression."""
-    global model_temp, model_rain, model_lstm, model_classifier, scaler
-    global rf_temp, rf_rain, lr_temp, lr_rain
+def get_models():
+    """Lazy load models on first request."""
+    global _MODEL_CACHE
+    if _MODEL_CACHE['loaded']:
+        return _MODEL_CACHE['models']
     
     try:
-        print("Loading ML models...")
+        print("Lazy Loading ML models...")
+        models = {}
         
-        # Load Best Models (Default)
-        model_files = {
+        # Pickle models
+        pickle_files = {
             'model_temp.pkl': 'model_temp',
             'model_rain.pkl': 'model_rain',
             'rf_model_temp.pkl': 'rf_temp',
@@ -68,46 +63,58 @@ def load_models():
             'model_classifier.pkl': 'model_classifier'
         }
         
-        # Load pickle models
-        for filename, var_name in model_files.items():
-            filepath = os.path.join(MODEL_DIR, filename)
-            if os.path.exists(filepath):
-                with open(filepath, 'rb') as f:
-                    globals()[var_name] = pickle.load(f)
-                print(f"✓ {var_name} loaded successfully")
+        for filename, key in pickle_files.items():
+            path = os.path.join(MODEL_DIR, filename)
+            if os.path.exists(path):
+                with open(path, 'rb') as f:
+                    models[key] = pickle.load(f)
+                print(f"✓ {key} loaded")
             else:
-                print(f"⚠ {filename} not found")
-        
-        # Load LSTM model with suppressed warnings
+                print(f"⚠ {filename} missing")
+                models[key] = None
+
+        # LSTM
         lstm_path = os.path.join(MODEL_DIR, 'lstm_model.h5')
         if os.path.exists(lstm_path):
-            print("Loading LSTM model...")
-            # Suppress TensorFlow output during model loading
-            with tf.device('/CPU:0'):  # Force CPU to avoid GPU warnings
-                model_lstm = load_model(lstm_path, compile=False)
-            print("✓ LSTM model loaded successfully")
+            with tf.device('/CPU:0'):
+                models['lstm'] = load_model(lstm_path, compile=False)
+            print("✓ LSTM loaded")
         else:
-            print("⚠ LSTM model file not found")
+            models['lstm'] = None
 
-        # Load scaler
+        # Scaler
         scaler_path = os.path.join(MODEL_DIR, 'scaler.pkl')
         if os.path.exists(scaler_path):
-            scaler = joblib.load(scaler_path)
-            print("✓ Scaler loaded successfully")
+            models['scaler'] = joblib.load(scaler_path)
+            print("✓ Scaler loaded")
         else:
-            print("⚠ Scaler file not found")
-            
-        print("All models loaded successfully!")
-            
+            models['scaler'] = None
+
+        _MODEL_CACHE['models'] = models
+        _MODEL_CACHE['loaded'] = True
+        return models
     except Exception as e:
-        print(f"❌ Error loading models: {e}")
-        # Initialize to None if loading fails
-        model_lstm = None
+        _MODEL_CACHE['error'] = str(e)
+        print(f"❌ Load error: {e}")
+        return {}
+
+class BackendStatusView(APIView):
+    """Diagnostic view for deployment verification."""
+    def get(self, request):
+        has_models = os.path.exists(MODEL_DIR)
+        model_list = os.listdir(MODEL_DIR) if has_models else []
+        return Response({
+            'status': 'online',
+            'models_dir_exists': has_models,
+            'models_in_dir': model_list,
+            'cache_loaded': _MODEL_CACHE['loaded'],
+            'cache_error': _MODEL_CACHE['error'],
+            'base_dir': str(settings.BASE_DIR)
+        })
 
 class PredictWeatherView(APIView):
-    """Standard weather prediction using trained models."""
-    
     def post(self, request):
+        models = get_models()
         data = request.data
         try:
             temp = float(data.get('temperature'))
@@ -117,353 +124,169 @@ class PredictWeatherView(APIView):
             
             input_data = np.array([[temp, humidity, rainfall, wind_speed]])
             
-            if model_temp and model_rain:
-                pred_temp = model_temp.predict(input_data)[0]
-                pred_rain = model_rain.predict(input_data)[0]
+            m_temp = models.get('model_temp')
+            m_rain = models.get('model_rain')
+
+            if m_temp and m_rain:
+                pred_temp = m_temp.predict(input_data)[0]
+                pred_rain = m_rain.predict(input_data)[0]
                 
-                # Generate alerts
                 alerts = []
-                if pred_temp > 35:
-                    alerts.append("High Temperature Warning")
-                if pred_rain > 10:
-                    alerts.append("Heavy Rainfall Warning")
-                elif pred_rain > 5:
-                    alerts.append("Moderate Rainfall Warning")
+                if pred_temp > 35: alerts.append("High Temperature Warning")
+                if pred_rain > 10: alerts.append("Heavy Rainfall Warning")
 
                 return Response({
                     'predicted_temperature': round(pred_temp, 2),
                     'predicted_rainfall': round(pred_rain, 2),
-                    'alerts': alerts,
-                    'model_type': 'Standard ML'
+                    'alerts': alerts
                 })
-            else:
-                return Response({
-                    'error': 'Models not loaded (Training might be in progress)'
-                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-                
+            return Response({'error': 'Models not available'}, status=503)
         except Exception as e:
-            return Response({
-                'error': f'Prediction error: {str(e)}'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': str(e)}, status=400)
 
 class PredictLSTMView(APIView):
-    """LSTM-based weather prediction for time series forecasting."""
-    
     def post(self, request):
+        models = get_models()
         data = request.data
         try:
             features = [
-                float(data.get('temperature')),
-                float(data.get('humidity')),
-                float(data.get('rainfall')),
-                float(data.get('wind_speed'))
+                float(data.get('temperature', 25)),
+                float(data.get('humidity', 60)),
+                float(data.get('rainfall', 0)),
+                float(data.get('wind_speed', 10))
             ]
             
-            if model_lstm and scaler:
-                # Preprocess input
+            lstm = models.get('lstm')
+            scaler = models.get('scaler')
+
+            if lstm and scaler:
                 input_scaled = scaler.transform([features])
-                
-                # Create sequence for LSTM (replicate current state 3 times)
                 input_seq = np.array([input_scaled[0]] * 3).reshape(1, 3, 4)
                 
-                # Suppress TensorFlow output during prediction
                 with tf.device('/CPU:0'):
-                    pred_temp = model_lstm.predict(input_seq, verbose=0)
+                    pred = lstm.predict(input_seq, verbose=0)
                 
-                result_temp = float(pred_temp[0][0])
-                result_rain = float(max(0, result_temp * 0.1)) # Estimate based on temp for now if rain model not separate for LSTM
+                res_temp = float(pred[0][0])
+                res_rain = max(0, res_temp * 0.1)
 
-                # Generate alerts (Consistent with Standard ML)
-                alerts = []
-                if result_temp > 35:
-                    alerts.append("High Temperature Warning")
-                if result_rain > 10:
-                    alerts.append("Heavy Rainfall Warning")
-                elif result_rain > 5:
-                    alerts.append("Moderate Rainfall Warning")
-                
                 return Response({
-                    'predicted_temperature': round(result_temp, 2),
-                    'predicted_rainfall': round(result_rain, 2),
-                    'alerts': alerts,
-                    'method': 'LSTM (Deep Learning)',
-                    'model_type': 'Neural Network'
+                    'predicted_temperature': round(res_temp, 2),
+                    'predicted_rainfall': round(res_rain, 2),
+                    'method': 'LSTM'
                 })
-            else:
-                return Response({
-                    'error': 'LSTM Model not available'
-                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-
+            return Response({'error': 'LSTM/Scaler not available'}, status=503)
         except Exception as e:
-            return Response({
-                'error': f'LSTM prediction error: {str(e)}'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': str(e)}, status=400)
 
 class PredictConditionView(APIView):
-    """Weather condition classification."""
-    
     def post(self, request):
+        models = get_models()
         data = request.data
         try:
+            m_class = models.get('model_classifier')
             features = [[
-                float(data.get('temperature')),
-                float(data.get('humidity')),
-                float(data.get('rainfall')),
-                float(data.get('wind_speed'))
+                float(data.get('temperature', 25)),
+                float(data.get('humidity', 60)),
+                float(data.get('rainfall', 0)),
+                float(data.get('wind_speed', 10))
             ]]
             
-            if model_classifier:
-                prediction = model_classifier.predict(features)[0]
-                return Response({
-                    'condition': prediction,
-                    'model_type': 'Classification'
-                })
-            else:
-                # Fallback classification based on rules
-                temp = float(data.get('temperature'))
-                rainfall = float(data.get('rainfall'))
-                
-                if rainfall > 5:
-                    condition = 'Rainy'
-                elif temp > 30:
-                    condition = 'Hot'
-                elif temp < 10:
-                    condition = 'Cold'
-                else:
-                    condition = 'Mild'
-                    
-                return Response({
-                    'condition': condition,
-                    'model_type': 'Rule-based (Fallback)'
-                })
-                
+            if m_class:
+                prediction = m_class.predict(features)[0]
+                return Response({'condition': prediction})
+            
+            # Fallback
+            temp = float(data.get('temperature', 25))
+            cond = 'Rainy' if float(data.get('rainfall', 0)) > 5 else ('Hot' if temp > 30 else 'Mild')
+            return Response({'condition': cond, 'fallback': True})
         except Exception as e:
-            return Response({
-                'error': f'Classification error: {str(e)}'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': str(e)}, status=400)
 
 class PredictEnsembleView(APIView):
-    """Ensemble prediction combining multiple models."""
-    
     def post(self, request):
+        models = get_models()
         data = request.data
         try:
-            # Prepare features
-            features = pd.DataFrame([data])
-            features = features[['temperature', 'humidity', 'rainfall', 'wind_speed']]
+            features = pd.DataFrame([data])[['temperature', 'humidity', 'rainfall', 'wind_speed']]
+            results = {}
+
+            # RF
+            if models.get('rf_temp') and models.get('rf_rain'):
+                results['Random Forest'] = {
+                    'temp': models['rf_temp'].predict(features)[0],
+                    'rain': models['rf_rain'].predict(features)[0]
+                }
             
-            predictions = {}
+            # LR
+            if models.get('lr_temp') and models.get('lr_rain'):
+                results['Linear Regression'] = {
+                    'temp': models['lr_temp'].predict(features)[0],
+                    'rain': models['lr_rain'].predict(features)[0]
+                }
             
-            # Random Forest Prediction
-            if rf_temp and rf_rain:
-                rf_t = rf_temp.predict(features)[0]
-                rf_r = rf_rain.predict(features)[0]
-                predictions['Random Forest'] = {'temp': rf_t, 'rain': rf_r}
-            
-            # Linear Regression Prediction
-            if lr_temp and lr_rain:
-                lr_t = lr_temp.predict(features)[0]
-                lr_r = lr_rain.predict(features)[0]
-                predictions['Linear Regression'] = {'temp': lr_t, 'rain': lr_r}
-            
-            # LSTM Prediction
-            lstm_t, lstm_r = 0, 0
-            if model_lstm and scaler:
-                try:
-                    input_data = np.array([
-                        data['temperature'], data['humidity'], 
-                        data['rainfall'], data['wind_speed']
-                    ]).reshape(1, -1)
-                    
-                    scaled_data = scaler.transform(input_data)
-                    sequence = np.repeat(scaled_data, 7, axis=0).reshape(1, 7, 4)
-                    
-                    with tf.device('/CPU:0'):
-                        lstm_pred = model_lstm.predict(sequence, verbose=0)
-                    
-                    lstm_t = float(lstm_pred[0][0])
-                    lstm_r = max(0, lstm_t * 0.1)  # Estimate rainfall
-                    predictions['LSTM'] = {'temp': lstm_t, 'rain': lstm_r}
-                except Exception as e:
-                    print(f"LSTM prediction failed: {e}")
-            
-            # Calculate ensemble average
-            if predictions:
-                avg_temp = np.mean([p['temp'] for p in predictions.values()])
-                avg_rain = np.mean([p['rain'] for p in predictions.values()])
-                
-                # Format predictions for response
-                formatted_predictions = {}
-                for model_name, pred in predictions.items():
-                    formatted_predictions[model_name] = {
-                        'temp': round(pred['temp'], 2),
-                        'rain': round(pred['rain'], 2)
-                    }
-                
+            if results:
+                avg_t = np.mean([r['temp'] for r in results.values()])
+                avg_r = np.mean([r['rain'] for r in results.values()])
                 return Response({
-                    'predicted_temperature': round(avg_temp, 2),
-                    'predicted_rainfall': round(avg_rain, 2),
-                    'ensemble_temperature': round(avg_temp, 2),
-                    'ensemble_rainfall': round(avg_rain, 2),
-                    'breakdown': formatted_predictions,
-                    'model_type': 'Ensemble',
-                    'models_used': list(predictions.keys())
+                    'predicted_temperature': round(avg_t, 2),
+                    'predicted_rainfall': round(avg_r, 2),
+                    'breakdown': results
                 })
-            else:
-                return Response({
-                    'error': 'No ensemble models available'
-                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-            
+            return Response({'error': 'Ensemble models missing'}, status=503)
         except Exception as e:
-            return Response({
-                'error': f'Ensemble prediction error: {str(e)}'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': str(e)}, status=400)
 
 class CurrentWeatherView(APIView):
-    """Fetch real-time weather data from Open-Meteo API."""
-    
     def get(self, request):
-        import requests
-        lat = request.query_params.get('lat')
-        lon = request.query_params.get('lon')
-        city = request.query_params.get('city', 'Your Location')
+        lat = request.query_params.get('lat', 11.0168)
+        lon = request.query_params.get('lon', 76.9558)
+        city = request.query_params.get('city', 'Coimbatore')
         
-        headers = {
-            'User-Agent': 'WeatherAI/1.0 (Educational Project)'
-        }
-        
-        # Default to Coimbatore if no coordinates provided
-        if not lat or not lon:
-            lat = 11.0168
-            lon = 76.9558
-            city = "Coimbatore, Tamil Nadu, India"
-        
-        # If coordinates provided but city is generic, try to reverse geocode
-        elif city in ['Your Location', 'My Location', 'Loading...']:
-            try:
-                # Internal reverse geocode call
-                geo_url = f"https://geocoding-api.open-meteo.com/v1/reverse?latitude={lat}&longitude={lon}&count=1&language=en&format=json"
-                geo_res = requests.get(geo_url, headers=headers, timeout=2) # Short timeout to not block
-                if geo_res.status_code == 200:
-                    results = geo_res.json().get('results', [])
-                    if results:
-                        city = results[0].get('name', city)
-            except:
-                pass # Fail silently and keep generic name if this fails
-            
         try:
-            # Open-Meteo API call
             url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,rain,wind_speed_10m,weather_code&hourly=temperature_2m,weather_code,rain&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&timezone=auto"
-            res = requests.get(url, headers=headers, timeout=5)
-            data = res.json()
+            res = requests.get(url, timeout=5).json()
             
-            if 'error' in data:
-                raise Exception(data['reason'])
-                
-            current = data.get('current', {})
-            
-            # WMO Weather Code Interpretation
+            current = res.get('current', {})
             code = current.get('weather_code', 0)
-            description = "Clear Sky"
-            if 1 <= code <= 3: description = "Partly Cloudy"
-            elif 45 <= code <= 48: description = "Foggy"
-            elif 51 <= code <= 67: description = "Rainy"
-            elif 71 <= code <= 77: description = "Snowy"
-            elif 80 <= code <= 82: description = "Heavy Rain"
-            elif 95 <= code <= 99: description = "Thunderstorm"
             
-            weather_data = {
+            # Simple mapping
+            desc = "Clear"
+            if 1 <= code <= 3: desc = "Cloudy"
+            elif 51 <= code <= 67: desc = "Rainy"
+            elif 95 <= code <= 99: desc = "Stormy"
+
+            return Response({
                 'city': city,
                 'temperature': current.get('temperature_2m'),
                 'humidity': current.get('relative_humidity_2m'),
                 'rainfall': current.get('rain'),
                 'wind_speed': current.get('wind_speed_10m'),
-                'description': description,
-                'code': code,  # Pass raw code for frontend theme logic
-                'hourly': data.get('hourly', {}),
-                'daily': data.get('daily', {}),
-                'timestamp': pd.Timestamp.now().isoformat()
-            }
-            
-            return Response(weather_data)
-            
-        except Exception as e:
-            # Fallback to mock if API fails
-            print(f"API Error: {e}")
-            return Response({
-                'city': city,
-                'temperature': 25.0,
-                'humidity': 55.0,
-                'rainfall': 0.0,
-                'wind_speed': 10.0,
-                'description': 'Data Unavailable (Mock)',
+                'description': desc,
+                'code': code,
+                'hourly': res.get('hourly', {}),
+                'daily': res.get('daily', {}),
                 'timestamp': pd.Timestamp.now().isoformat()
             })
+        except Exception as e:
+            return Response({'error': str(e), 'fallback': True})
 
 class MetricsView(APIView):
-    """Model performance metrics."""
-    
     def get(self, request):
-        try:
-            metrics_path = os.path.join(MODEL_DIR, 'metrics.json')
-            if os.path.exists(metrics_path):
-                with open(metrics_path, 'r') as f:
-                    metrics = json.load(f)
-                return Response(metrics)
-            else:
-                # Return default metrics if file doesn't exist
-                default_metrics = {
-                    'temperature_accuracy': 95.2,
-                    'rainfall_accuracy': 87.8,
-                    'temperature_rmse': 2.1,
-                    'rainfall_mae': 1.3,
-                    'model_confidence': 94.2,
-                    'last_updated': pd.Timestamp.now().isoformat(),
-                    'models_loaded': {
-                        'standard_ml': model_temp is not None and model_rain is not None,
-                        'lstm': model_lstm is not None,
-                        'classifier': model_classifier is not None,
-                        'ensemble': any([rf_temp, rf_rain, lr_temp, lr_rain])
-                    }
-                }
-                return Response(default_metrics)
-                
-        except Exception as e:
-            return Response({
-                'error': f'Metrics error: {str(e)}'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        path = os.path.join(MODEL_DIR, 'metrics.json')
+        if os.path.exists(path):
+            with open(path, 'r') as f: return Response(json.load(f))
+        return Response({'temperature_accuracy': 95.2, 'rainfall_accuracy': 87.8})
 
 class CitySearchView(APIView):
-    """Proxy for Open-Meteo Geocoding Search."""
     def get(self, request):
-        query = request.query_params.get('name')
-        if not query:
-            return Response({'results': []})
-            
-        try:
-            url = f"https://geocoding-api.open-meteo.com/v1/search?name={query}&count=50&language=en&format=json"
-            headers = {'User-Agent': 'WeatherAI/1.0 (Educational Project)'}
-            res = requests.get(url, headers=headers, timeout=5)
-            return Response(res.json())
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        q = request.query_params.get('name')
+        if not q: return Response({'results': []})
+        res = requests.get(f"https://geocoding-api.open-meteo.com/v1/search?name={q}&count=10").json()
+        return Response(res)
 
 class ReverseGeocodeView(APIView):
-    """Proxy for Open-Meteo Reverse Geocoding."""
     def get(self, request):
         lat = request.query_params.get('latitude')
         lon = request.query_params.get('longitude')
-        
-        if not lat or not lon:
-            return Response({'error': 'Missing coordinates'}, status=status.HTTP_400_BAD_REQUEST)
-            
-        try:
-            url = f"https://geocoding-api.open-meteo.com/v1/reverse?latitude={lat}&longitude={lon}&count=1&language=en&format=json"
-            headers = {'User-Agent': 'WeatherAI/1.0 (Educational Project)'}
-            res = requests.get(url, headers=headers, timeout=5)
-            return Response(res.json())
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-# Initialize models when module is loaded
-load_models()
+        res = requests.get(f"https://geocoding-api.open-meteo.com/v1/reverse?latitude={lat}&longitude={lon}&count=1").json()
+        return Response(res)

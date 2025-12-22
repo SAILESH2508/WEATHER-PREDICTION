@@ -10,4 +10,5 @@ urlpatterns = [
     path('metrics/', MetricsView.as_view(), name='metrics'),
     path('search-city/', CitySearchView.as_view(), name='search_city'),
     path('reverse-geocode/', ReverseGeocodeView.as_view(), name='reverse_geocode'),
+    path('status/', BackendStatusView.as_view(), name='status'),
 ]
