@@ -33,6 +33,30 @@ _MODEL_CACHE = {
     'models': {}
 }
 
+# Separate cache for LSTM as it's the heaviest model
+_LSTM_CACHE = {'model': None, 'loaded': False, 'error': None}
+
+def get_lstm():
+    global _LSTM_CACHE
+    if _LSTM_CACHE['loaded']:
+        return _LSTM_CACHE['model']
+    try:
+        import tensorflow as tf
+        from tensorflow.keras.models import load_model
+        print("Lazy Loading LSTM...")
+        lstm_path = os.path.join(MODEL_DIR, 'lstm_model.h5')
+        if os.path.exists(lstm_path):
+            with tf.device('/CPU:0'):
+                _LSTM_CACHE['model'] = load_model(lstm_path, compile=False)
+            print("✓ LSTM loaded")
+        _LSTM_CACHE['loaded'] = True
+        return _LSTM_CACHE['model']
+    except Exception as e:
+        print(f"❌ LSTM Load error: {e}")
+        _LSTM_CACHE['error'] = str(e)
+        _LSTM_CACHE['loaded'] = True
+        return None
+
 def get_models():
     """Lazy load models on first request."""
     global _MODEL_CACHE
@@ -42,14 +66,8 @@ def get_models():
     try:
         import joblib
         import pandas as pd
-        import tensorflow as tf
-        from tensorflow.keras.models import load_model
         
-        # Configure TensorFlow inside lazy loader
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-        tf.get_logger().setLevel('ERROR')
-        
-        print("Lazy Loading ML models...")
+        print("Lazy Loading Lightweight ML models...")
         models = {}
         
         # Pickle models
@@ -72,15 +90,6 @@ def get_models():
             else:
                 print(f"⚠ {filename} missing")
                 models[key] = None
-
-        # LSTM
-        lstm_path = os.path.join(MODEL_DIR, 'lstm_model.h5')
-        if os.path.exists(lstm_path):
-            with tf.device('/CPU:0'):
-                models['lstm'] = load_model(lstm_path, compile=False)
-            print("✓ LSTM loaded")
-        else:
-            models['lstm'] = None
 
         # Scaler
         scaler_path = os.path.join(MODEL_DIR, 'scaler.pkl')
@@ -112,6 +121,8 @@ class BackendStatusView(APIView):
             'models_in_dir': model_list,
             'cache_loaded': _MODEL_CACHE['loaded'],
             'cache_error': _MODEL_CACHE['error'],
+            'lstm_loaded': _LSTM_CACHE['loaded'],
+            'lstm_error': _LSTM_CACHE['error'],
             'base_dir': str(settings.BASE_DIR)
         })
 
@@ -152,6 +163,7 @@ class PredictLSTMView(APIView):
         models = get_models()
         data = request.data
         try:
+            import tensorflow as tf
             features = [
                 float(data.get('temperature', 25)),
                 float(data.get('humidity', 60)),
@@ -159,7 +171,7 @@ class PredictLSTMView(APIView):
                 float(data.get('wind_speed', 10))
             ]
             
-            lstm = models.get('lstm')
+            lstm = get_lstm()
             scaler = models.get('scaler')
 
             if lstm and scaler:

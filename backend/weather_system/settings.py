@@ -64,27 +64,25 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_HEADERS = ["*"]
+CORS_ALLOW_METHODS = ["*"]
+CORS_REPLACE_HTTPS_REFERER = True
+CORS_ALLOW_CREDENTIALS = True
+
 import os
 import warnings
 from pathlib import Path
 import dj_database_url # Import dj_database_url
 
 
-# CORS Configuration - PERMISSIVE FOR DEBUGGING
-CORS_ALLOW_ALL_ORIGINS = True 
-CORS_ALLOW_CREDENTIALS = True
-
-# Explicitly allow the deployed frontend
-CORS_ALLOWED_ORIGINS = [
-    "https://weather-prediction-nu-nine.vercel.app",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
-
+# CSRF Trusted Origins
 CSRF_TRUSTED_ORIGINS = [
     "https://*.onrender.com", 
     "https://*.vercel.app",
-    "https://weather-prediction-nu-nine.vercel.app"
+    "https://weather-prediction-nu-nine.vercel.app",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
 ]
 
 ROOT_URLCONF = 'weather_system.urls'
