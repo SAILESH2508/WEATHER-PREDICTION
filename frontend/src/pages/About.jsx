@@ -1,4 +1,98 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { API_BASE_URL } from '../config';
+
+const SystemHealth = () => {
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const checkStatus = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/status/`);
+      setStatus(res.data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    checkStatus();
+  }, []);
+
+  return (
+    <div className="card border-0 mb-5 overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className="card-header bg-transparent border-0 p-4 pb-0 d-flex justify-content-between align-items-center">
+        <h3 className="text-white fw-bold mb-0">🛰️ System Health</h3>
+        <button className="btn btn-sm btn-outline-info" onClick={checkStatus} disabled={loading}>
+          {loading ? 'Checking...' : 'Refresh Status'}
+        </button>
+      </div>
+      <div className="card-body p-4">
+        {error ? (
+          <div className="alert alert-danger mb-0">
+            <strong>Connection Error:</strong> {error}
+            <br />
+            <small>Backend might be starting up or CORS is blocking the request.</small>
+          </div>
+        ) : status ? (
+          <div className="row g-3">
+            <div className="col-md-4">
+              <div className="p-3 rounded bg-white bg-opacity-10 text-center">
+                <small className="text-white-50 d-block mb-1">Backend Status</small>
+                <span className={`fw-bold ${status.status === 'online' ? 'text-success' : 'text-danger'}`}>
+                  {status.status.toUpperCase()}
+                </span>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="p-3 rounded bg-white bg-opacity-10 text-center">
+                <small className="text-white-50 d-block mb-1">Models Loaded</small>
+                <span className={`fw-bold ${status.cache_loaded ? 'text-info' : 'text-warning'}`}>
+                  {status.cache_loaded ? 'Ready' : 'In Progress'}
+                </span>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="p-3 rounded bg-white bg-opacity-10 text-center">
+                <small className="text-white-50 d-block mb-1">Local Time</small>
+                <span className="text-white small">
+                  {new Date().toLocaleTimeString()}
+                </span>
+              </div>
+            </div>
+            {status.cache_error && (
+              <div className="col-12">
+                <div className="p-3 rounded bg-danger bg-opacity-10 border border-danger border-opacity-25 mt-2">
+                  <h6 className="text-danger fw-bold">Model Initialization Failure:</h6>
+                  <pre className="text-white small mb-0 overflow-auto custom-scrollbar" style={{ maxHeight: '200px' }}>
+                    {status.cache_error}
+                  </pre>
+                </div>
+              </div>
+            )}
+            <div className="col-12 mt-3">
+              <h6 className="text-white-50 small mb-2 text-uppercase">Models Found on Server:</h6>
+              <div className="d-flex flex-wrap gap-2">
+                {status.models_in_dir.map(m => (
+                  <span key={m} className="badge bg-white bg-opacity-10 fw-normal">{m}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-4 text-white-50">
+            Initialing hardware diagnostics...
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const About = () => {
   return (
@@ -107,8 +201,8 @@ const About = () => {
             </div>
           </div>
         </div>
-
-
+        {/* System Health Diagnostics */}
+        <SystemHealth />
 
       </div>
     </div>

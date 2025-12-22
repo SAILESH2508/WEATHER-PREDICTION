@@ -94,8 +94,11 @@ def get_models():
         _MODEL_CACHE['loaded'] = True
         return models
     except Exception as e:
-        _MODEL_CACHE['error'] = str(e)
+        import traceback
+        _MODEL_CACHE['error'] = f"{str(e)}\n{traceback.format_exc()}"
         print(f"❌ Load error: {e}")
+        # Mark as loaded even if failed to avoid repeated heavy attempts if it's OOM
+        _MODEL_CACHE['loaded'] = True 
         return {}
 
 class BackendStatusView(APIView):
