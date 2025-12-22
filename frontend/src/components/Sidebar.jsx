@@ -11,84 +11,96 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
 
     const [currentWeather, setCurrentWeather] = useState({ temperature: '--', condition: 'loading', city: 'Loading...' });
 
-    useEffect(() => {
-        const fetchWeather = async () => {
-            const fetchDefault = async () => {
+    const fetchDefault = async () => {
+        try {
+            // Default to Coimbatore
+            const res = await axios.get(`${API_BASE_URL}/api/current/?lat=11.0168&lon=76.9558&city=Coimbatore, Tamil Nadu, India`);
+            const defaultCity = res.data.city || 'Coimbatore, Tamil Nadu, India';
+            setCurrentWeather({
+                temperature: Math.round(res.data.temperature),
+                condition: res.data.description,
+                city: defaultCity,
+                humidity: res.data.humidity,
+                wind_speed: res.data.wind_speed
+            });
+            if (setLocationName) setLocationName(defaultCity);
+        } catch (e) {
+            console.error(e);
+            const fallback = 'Coimbatore, Tamil Nadu, India';
+            setCurrentWeather(prev => ({ ...prev, city: fallback }));
+            if (setLocationName) setLocationName(fallback);
+        }
+    };
+
+    const handleLocationClick = async (autoNavigate = true) => {
+        if (!navigator.geolocation) {
+            alert("Geolocation is not supported by this browser.");
+            fetchDefault();
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
                 try {
-                    // Default to Coimbatore
-                    const res = await axios.get(`${API_BASE_URL}/api/current/?lat=11.0168&lon=76.9558&city=Coimbatore, Tamil Nadu, India`);
-                    const defaultCity = res.data.city || 'Coimbatore, Tamil Nadu, India';
-                    setCurrentWeather({
-                        temperature: Math.round(res.data.temperature),
-                        condition: res.data.description,
-                        city: defaultCity,
-                        humidity: res.data.humidity,
-                        wind_speed: res.data.wind_speed
-                    });
-                    if (setLocationName) setLocationName(defaultCity);
-                } catch (e) {
-                    console.error(e);
-                    const fallback = 'Coimbatore, Tamil Nadu, India';
-                    setCurrentWeather(prev => ({ ...prev, city: fallback }));
-                    if (setLocationName) setLocationName(fallback);
-                }
-            };
+                    let cityName = '';
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    async (pos) => {
-                        try {
-                            let cityName = '';
-                            try {
-                                const controller = new AbortController();
-                                const timeoutId = setTimeout(() => controller.abort(), 15000);
+                        const geoRes = await axios.get(
+                            `${API_BASE_URL}/api/reverse-geocode/?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}`,
+                            { signal: controller.signal }
+                        );
+                        clearTimeout(timeoutId);
 
-                                const geoRes = await axios.get(
-                                    `${API_BASE_URL}/api/reverse-geocode/?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}`,
-                                    { signal: controller.signal }
-                                );
-                                clearTimeout(timeoutId);
-
-                                if (geoRes.data.results && geoRes.data.results.length > 0) {
-                                    const result = geoRes.data.results[0];
-                                    const parts = [result.name];
-                                    if (result.admin1 && result.admin1 !== result.name) parts.push(result.admin1);
-                                    if (result.country_code) parts.push(result.country_code.toUpperCase());
-                                    cityName = parts.join(', ');
-                                }
-                            } catch (geoErr) {
-                                console.warn("Reverse geocoding failed", geoErr.message);
-                            }
-
-                            const cityParam = cityName || '';
-                            const weatherRes = await axios.get(`${API_BASE_URL}/api/current/?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&city=${encodeURIComponent(cityParam)}`);
-                            const displayCity = cityName || weatherRes.data.city || `${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)}`;
-
-                            setCurrentWeather({
-                                temperature: Math.round(weatherRes.data.temperature),
-                                condition: weatherRes.data.description,
-                                city: displayCity,
-                                humidity: weatherRes.data.humidity,
-                                wind_speed: weatherRes.data.wind_speed
-                            });
-                            if (setLocationName) setLocationName(displayCity);
-                        } catch (error) {
-                            console.error("Weather fetch error:", error);
-                            fetchDefault();
+                        if (geoRes.data.results && geoRes.data.results.length > 0) {
+                            const result = geoRes.data.results[0];
+                            const parts = [result.name];
+                            if (result.admin1 && result.admin1 !== result.name) parts.push(result.admin1);
+                            if (result.country_code) parts.push(result.country_code.toUpperCase());
+                            cityName = parts.join(', ');
                         }
-                    },
-                    (error) => {
-                        console.warn("Geolocation error:", error.message);
-                        fetchDefault();
-                    },
-                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 }
-                );
-            } else {
+                    } catch (geoErr) {
+                        console.warn("Reverse geocoding failed", geoErr.message);
+                    }
+
+                    const cityParam = cityName || '';
+                    const weatherRes = await axios.get(`${API_BASE_URL}/api/current/?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&city=${encodeURIComponent(cityParam)}`);
+                    const displayCity = cityName || weatherRes.data.city || `${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)}`;
+
+                    setCurrentWeather({
+                        temperature: Math.round(weatherRes.data.temperature),
+                        condition: weatherRes.data.description,
+                        city: displayCity,
+                        humidity: weatherRes.data.humidity,
+                        wind_speed: weatherRes.data.wind_speed
+                    });
+                    if (setLocationName) setLocationName(displayCity);
+
+                    // Navigate if requested (e.g. button click)
+                    if (autoNavigate) {
+                        navigate(`/dashboard?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&city=${encodeURIComponent(displayCity)}`);
+                        if (closeSidebar) closeSidebar();
+                    }
+
+                } catch (error) {
+                    console.error("Weather fetch error:", error);
+                    fetchDefault();
+                }
+            },
+            (error) => {
+                console.warn("Geolocation error:", error.message);
+                if (autoNavigate) alert("Unable to retrieve your location. Please check browser permissions.");
                 fetchDefault();
-            }
-        };
-        fetchWeather();
-    }, [setLocationName]);
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 }
+        );
+    };
+
+    useEffect(() => {
+        // Initial load - fetch but don't force navigate (pass false)
+        handleLocationClick(false);
+    }, []);
 
     const getWeatherIcon = (c) => {
         if (!c) return '🌤️';
@@ -194,7 +206,7 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
 
             {/* Global Search (Unified) */}
             <div className="px-3 mb-4">
-                <div className="position-relative">
+                <div className="position-relative mb-3">
                     <input
                         type="text"
                         className="form-control form-control-lg border-0 border-bottom border-white border-opacity-25 text-white placeholder-white-50 rounded-0 bg-transparent px-0"
@@ -219,6 +231,13 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                         </div>
                     )}
                 </div>
+
+                <button
+                    onClick={() => handleLocationClick()}
+                    className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2 rounded-pill shadow-sm hover-transform"
+                >
+                    📍 Use Current Location
+                </button>
             </div>
 
             {/* Popular Cities (Unified List) */}

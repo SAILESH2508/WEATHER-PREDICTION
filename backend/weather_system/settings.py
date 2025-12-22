@@ -71,10 +71,21 @@ import dj_database_url # Import dj_database_url
 
 
 # CORS Configuration - PERMISSIVE FOR DEBUGGING
-CORS_ALLOW_ALL_ORIGINS = True # Force allow all for now to unblock
+CORS_ALLOW_ALL_ORIGINS = True 
 CORS_ALLOW_CREDENTIALS = True
 
-CSRF_TRUSTED_ORIGINS = ["https://*.onrender.com", "https://*.vercel.app"]
+# Explicitly allow the deployed frontend
+CORS_ALLOWED_ORIGINS = [
+    "https://weather-prediction-nu-nine.vercel.app",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.onrender.com", 
+    "https://*.vercel.app",
+    "https://weather-prediction-nu-nine.vercel.app"
+]
 
 ROOT_URLCONF = 'weather_system.urls'
 
