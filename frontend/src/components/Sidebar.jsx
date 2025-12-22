@@ -231,13 +231,6 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                         </div>
                     )}
                 </div>
-
-                <button
-                    onClick={() => handleLocationClick()}
-                    className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2 rounded-pill shadow-sm hover-transform"
-                >
-                    📍 Use Current Location
-                </button>
             </div>
 
             {/* Popular Cities (Unified List) */}
