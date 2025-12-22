@@ -54,7 +54,7 @@ const DailyForecast = ({ data, locationName }) => {
 
                     return (
                         <div key={day} className="d-flex align-items-center justify-content-between p-3 rounded-4 mb-2 hover-transform position-relative overflow-hidden"
-                            style={{ background: index === 0 ? 'rgba(41, 98, 255, 0.15)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            style={{ background: 'transparent', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
 
                             {/* Day */}
                             <div style={{ width: '60px' }}>
@@ -102,7 +102,7 @@ const DailyForecast = ({ data, locationName }) => {
             </div>
 
             {/* Weekly Outlook */}
-            <div className="mt-3 p-3 rounded-4 border border-white border-opacity-10" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
+            <div className="mt-3 p-3 rounded-4 border border-white border-opacity-10" style={{ background: 'transparent' }}>
                 <div className="d-flex align-items-center gap-2 mb-1">
                     <span className="text-white fw-bold text-uppercase small tracking-wide text-opacity-75">Weekly Outlook</span>
                 </div>
