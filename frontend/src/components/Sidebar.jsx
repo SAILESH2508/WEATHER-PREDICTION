@@ -32,6 +32,57 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
         }
     };
 
+    const fetchWeatherForCoords = async (coords, autoNavigate, retry = 0) => {
+        try {
+            let cityName = '';
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+                const geoRes = await axios.get(
+                    `${API_BASE_URL}/api/reverse-geocode/?latitude=${coords.latitude}&longitude=${coords.longitude}`,
+                    { signal: controller.signal }
+                );
+                clearTimeout(timeoutId);
+
+                if (geoRes.data.results && geoRes.data.results.length > 0) {
+                    const result = geoRes.data.results[0];
+                    cityName = result.name;
+                    if (result.admin1 && result.admin1 !== result.name) cityName += `, ${result.admin1}`;
+                }
+            } catch (geoErr) {
+                console.warn("Reverse geocoding failed:", geoErr.message);
+            }
+
+            const cityParam = cityName || '';
+            const weatherRes = await axios.get(`${API_BASE_URL}/api/current/?lat=${coords.latitude}&lon=${coords.longitude}&city=${encodeURIComponent(cityParam)}`);
+            const displayCity = cityName || weatherRes.data.city || `${coords.latitude.toFixed(2)}, ${coords.longitude.toFixed(2)}`;
+
+            setCurrentWeather({
+                temperature: Math.round(weatherRes.data.temperature),
+                condition: weatherRes.data.description,
+                city: displayCity,
+                humidity: weatherRes.data.humidity,
+                wind_speed: weatherRes.data.wind_speed
+            });
+            if (setLocationName) setLocationName(displayCity);
+
+            if (autoNavigate) {
+                navigate(`/dashboard?lat=${coords.latitude}&lon=${coords.longitude}&city=${encodeURIComponent(displayCity)}`);
+                if (closeSidebar) closeSidebar();
+            }
+        } catch (error) {
+            console.error("Weather fetch error:", error.message);
+            const status = error.response?.status;
+            if ((status === 503 || status === 504 || !error.response) && retry < 5) {
+                console.log(`Sidebar API retrying... (${retry + 1}/5)`);
+                setTimeout(() => fetchWeatherForCoords(coords, autoNavigate, retry + 1), 5000);
+            } else {
+                fetchDefault();
+            }
+        }
+    };
+
     const handleLocationClick = async (autoNavigate = true) => {
         if (!navigator.geolocation) {
             alert("Geolocation is not supported by this browser.");
@@ -40,66 +91,7 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
         }
 
         navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-                try {
-                    let cityName = '';
-                    try {
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 30000); // Extended to 30s for Render cold starts
-
-                        const geoRes = await axios.get(
-                            `${API_BASE_URL}/api/reverse-geocode/?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}`,
-                            { signal: controller.signal }
-                        );
-                        clearTimeout(timeoutId);
-
-                        if (geoRes.data.results && geoRes.data.results.length > 0) {
-                            const result = geoRes.data.results[0];
-                            const parts = [result.name];
-                            if (result.admin1 && result.admin1 !== result.name) parts.push(result.admin1);
-                            if (result.country_code) parts.push(result.country_code.toUpperCase());
-                            cityName = parts.join(', ');
-                        } else if (geoRes.data.error) {
-                            console.warn("Backend geocoding reported error:", geoRes.data.error);
-                        }
-                    } catch (geoErr) {
-                        const message = geoErr.name === 'AbortError' ? 'Geocoding timed out' : geoErr.message;
-                        console.warn("Reverse geocoding failed:", message);
-                        // No specific retry for geocoding alone as the outer block handles overall location fetch retry
-                    }
-
-                    const cityParam = cityName || '';
-                    const weatherRes = await axios.get(`${API_BASE_URL}/api/current/?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&city=${encodeURIComponent(cityParam)}`);
-                    const displayCity = cityName || weatherRes.data.city || `${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)}`;
-
-                    setCurrentWeather({
-                        temperature: Math.round(weatherRes.data.temperature),
-                        condition: weatherRes.data.description,
-                        city: displayCity,
-                        humidity: weatherRes.data.humidity,
-                        wind_speed: weatherRes.data.wind_speed
-                    });
-                    if (setLocationName) setLocationName(displayCity);
-
-                    // Navigate if requested (e.g. button click)
-                    if (autoNavigate) {
-                        navigate(`/dashboard?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&city=${encodeURIComponent(displayCity)}`);
-                        if (closeSidebar) closeSidebar();
-                    }
-
-                } catch (error) {
-                    console.error("Weather fetch error:", error.message);
-                    const status = error.response?.status;
-                    if ((status === 503 || status === 504 || !error.response) && (window._sidebarRetryCount || 0) < 5) {
-                        window._sidebarRetryCount = (window._sidebarRetryCount || 0) + 1;
-                        console.log(`Sidebar retrying... (${window._sidebarRetryCount}/5)`);
-                        setTimeout(() => handleLocationClick(autoNavigate), 5000);
-                    } else {
-                        window._sidebarRetryCount = 0;
-                        fetchDefault();
-                    }
-                }
-            },
+            (pos) => fetchWeatherForCoords(pos.coords, autoNavigate),
             (error) => {
                 console.warn("Geolocation error:", error.message);
                 if (autoNavigate) alert("Unable to retrieve your location. Please check browser permissions.");
