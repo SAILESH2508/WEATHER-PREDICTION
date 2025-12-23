@@ -131,6 +131,13 @@ const WeatherDashboard = ({ locationName }) => {
                 let lat = queryParams.get('lat');
                 let lon = queryParams.get('lon');
                 let cityParam = queryParams.get('city');
+                
+                // Decode the city parameter if it exists
+                if (cityParam) {
+                    cityParam = decodeURIComponent(cityParam);
+                }
+                
+                console.log('Dashboard URL params:', { lat, lon, cityParam, locationName });
 
                 // Default to Coimbatore if no params
                 if (!lat || !lon) {
@@ -205,7 +212,13 @@ const WeatherDashboard = ({ locationName }) => {
                     }
                 }
 
-                setCurrentWeather(weatherData);
+                const finalCity = cityParam || weatherData.city || locationName || DEFAULT_CITY;
+                console.log('Final city for display:', finalCity);
+                
+                setCurrentWeather({
+                    ...weatherData,
+                    city: finalCity
+                });
                 setHourlyData(weatherData.hourly);
                 // Better approach: Don't mutate res.data daily for the 'dailyData' state used by 7-day list.
                 if (targetDate && isHistory) {
@@ -244,7 +257,7 @@ const WeatherDashboard = ({ locationName }) => {
         };
 
         fetchWeather();
-    }, [location.search, handlePredictManual, retryCount]);
+    }, [location.search, handlePredictManual, retryCount, locationName]);
 
     // Theme Effect
     useEffect(() => {
