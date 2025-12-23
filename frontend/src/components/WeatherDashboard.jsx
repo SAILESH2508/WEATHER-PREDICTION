@@ -134,12 +134,9 @@ const WeatherDashboard = ({ locationName }) => {
                 let lon = queryParams.get('lon');
                 let cityParam = queryParams.get('city');
                 
-                console.log('WeatherDashboard raw URL params:', { lat, lon, cityParam });
-                
                 // Decode the city parameter if it exists
                 if (cityParam) {
                     cityParam = decodeURIComponent(cityParam);
-                    console.log('Decoded city param:', cityParam);
                 }
 
                 // Default to Coimbatore if no params
@@ -217,12 +214,6 @@ const WeatherDashboard = ({ locationName }) => {
 
                 // Priority: URL parameter > API response > prop > default
                 const finalCity = cityParam || weatherData.city || locationName || DEFAULT_CITY;
-                console.log('WeatherDashboard city resolution:', {
-                    cityParam,
-                    apiCity: weatherData.city,
-                    locationName,
-                    finalCity
-                });
                 
                 setCurrentWeather({
                     ...weatherData,

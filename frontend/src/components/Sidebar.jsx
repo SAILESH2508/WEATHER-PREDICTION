@@ -95,7 +95,6 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                     });
 
                     const geoRes = await Promise.race([geocodingPromise, timeoutPromise]);
-                    console.log('Geocoding response:', geoRes.data);
 
                     if (geoRes.data && geoRes.data.results && geoRes.data.results.length > 0) {
                         const result = geoRes.data.results[0];
@@ -104,7 +103,6 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                             if (result.admin1 && result.admin1 !== result.name) {
                                 cityName += `, ${result.admin1}`;
                             }
-                            console.log('Geocoded city name:', cityName);
                             
                             // Cache the result
                             geocodeCache.current.set(cacheKey, {
@@ -118,11 +116,9 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                                 geocodeCache.current.delete(firstKey);
                             }
                         }
-                    } else {
-                        console.log('No geocoding results found');
                     }
                 } catch (geoErr) {
-                    console.log("Geocoding failed:", geoErr.message);
+                    // Geocoding failed, will use fallback
                 }
                 
                 // If geocoding failed or returned no results, create a user-friendly location name
@@ -132,7 +128,6 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                     
                     // Create a more user-friendly location name that clearly shows it's the user's location
                     cityName = `My Location (${lat.toFixed(3)}°, ${lon.toFixed(3)}°)`;
-                    console.log('Using fallback location name:', cityName);
                 }
             }
 
@@ -177,12 +172,6 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
             }
             
             const displayCity = cityName || weatherRes.data.city || `Your Location (${coords.latitude.toFixed(3)}°, ${coords.longitude.toFixed(3)}°)`;
-            console.log('Display city components:', {
-                cityName,
-                apiCity: weatherRes.data.city,
-                coordinates: `${coords.latitude.toFixed(3)}°, ${coords.longitude.toFixed(3)}°`,
-                finalDisplayCity: displayCity
-            });
 
             setCurrentWeather({
                 temperature: Math.round(weatherRes.data.temperature),
@@ -193,12 +182,9 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
             });
             
             if (setLocationName) setLocationName(displayCity);
-            console.log('Set location name to:', displayCity);
 
             if (autoNavigate) {
-                const navigationUrl = `/dashboard?lat=${coords.latitude}&lon=${coords.longitude}&city=${encodeURIComponent(displayCity)}`;
-                console.log('Navigating to:', navigationUrl);
-                navigate(navigationUrl);
+                navigate(`/dashboard?lat=${coords.latitude}&lon=${coords.longitude}&city=${encodeURIComponent(displayCity)}`);
                 if (closeSidebar) closeSidebar();
             }
         } catch (error) {
@@ -208,7 +194,6 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                 
                 // Provide fallback data when API is unavailable
                 const fallbackCity = cityName || `My Location (${coords.latitude.toFixed(3)}°, ${coords.longitude.toFixed(3)}°)`;
-                console.log('Using error fallback city:', fallbackCity);
                 
                 setCurrentWeather({
                     temperature: '--',
@@ -242,11 +227,9 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
     const geocodeCache = useRef(new Map());
 
     const handleLocationClick = useCallback(async (autoNavigate = true) => {
-        console.log('🎯 handleLocationClick called with autoNavigate:', autoNavigate);
         setIsGettingLocation(true);
         
         if (!navigator.geolocation) {
-            console.log('❌ Geolocation not supported');
             alert("Geolocation is not supported by this browser.");
             fetchDefault();
             setIsGettingLocation(false);
@@ -255,12 +238,9 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
 
         // Prevent multiple simultaneous requests
         if (isRequestingRef.current) {
-            console.log("⚠️ Location request already in progress, skipping...");
             setIsGettingLocation(false);
             return;
         }
-
-        console.log('🔄 Starting geolocation request...');
 
         // Clear any existing debounce timeout
         if (debounceTimeoutRef.current) {
@@ -269,19 +249,16 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
 
         // Debounce the geolocation request
         debounceTimeoutRef.current = setTimeout(() => {
-            console.log('⏰ Debounce timeout completed, calling geolocation API...');
             isRequestingRef.current = true;
             
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
-                    console.log('✅ Got geolocation position:', pos.coords);
                     fetchWeatherForCoords(pos.coords, autoNavigate).finally(() => {
                         isRequestingRef.current = false;
                         setIsGettingLocation(false);
                     });
                 },
                 (error) => {
-                    console.log('❌ Geolocation error:', error.message);
                     isRequestingRef.current = false;
                     setIsGettingLocation(false);
                     if (autoNavigate) alert("Unable to retrieve your location. Please check browser permissions.");
@@ -289,11 +266,11 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                 },
                 { 
                     enableHighAccuracy: false, 
-                    timeout: 10000, // Reduced timeout
-                    maximumAge: 300000 // Reduced cache age to 5 minutes
+                    timeout: 10000,
+                    maximumAge: 300000
                 }
             );
-        }, 500); // Increased debounce to 500ms
+        }, 500);
     }, [fetchDefault, fetchWeatherForCoords]);
 
     useEffect(() => {
@@ -405,29 +382,13 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                         <span className="me-1">📍</span> 
                         <span className="me-2">{currentWeather.city}</span>
                         <button 
-                            className="btn btn-sm btn-outline-light border-0 rounded-circle p-1 me-1" 
-                            onClick={() => {
-                                console.log('Location button clicked!');
-                                handleLocationClick(true);
-                            }}
+                            className="btn btn-sm btn-outline-light border-0 rounded-circle p-1" 
+                            onClick={() => handleLocationClick(true)}
                             title="Use my location"
                             style={{ fontSize: '0.7rem', width: '24px', height: '24px' }}
                             disabled={isGettingLocation}
                         >
                             {isGettingLocation ? '⏳' : '🎯'}
-                        </button>
-                        <button 
-                            className="btn btn-sm btn-outline-warning border-0 rounded-circle p-1" 
-                            onClick={() => {
-                                console.log('Test navigation button clicked!');
-                                const testCity = "Test Location (40.712°, -74.006°)";
-                                navigate(`/dashboard?lat=40.712&lon=-74.006&city=${encodeURIComponent(testCity)}`);
-                                if (closeSidebar) closeSidebar();
-                            }}
-                            title="Test navigation"
-                            style={{ fontSize: '0.6rem', width: '24px', height: '24px' }}
-                        >
-                            🧪
                         </button>
                     </div>
 
