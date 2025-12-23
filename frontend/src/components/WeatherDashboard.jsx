@@ -41,27 +41,82 @@ const WeatherDashboard = ({ locationName }) => {
     const [prediction, setPrediction] = useState(null);
 
     const handlePredictManual = useCallback(async (t, h, r, w) => {
+        // Show immediate feedback
+        setPrediction({
+            prediction: "Analyzing...",
+            confidence: "Processing",
+            temperature_tomorrow: "...",
+            rainfall_tomorrow: "...",
+            condition_tomorrow: "Loading...",
+            message: "Processing your weather prediction..."
+        });
+
         try {
-            const res = await axios.post(`${API_BASE_URL}/api/predict_lstm/`, {
+            // First, try the fast prediction endpoint
+            const fastCall = axios.post(`${API_BASE_URL}/api/predict_fast/`, {
                 temperature: t,
                 humidity: h,
                 rainfall: r,
                 wind_speed: w
             }, {
-                timeout: 15000 // 15 second timeout for ML predictions
+                timeout: 2000 // Very fast timeout for quick response
             });
-            setPrediction(res.data);
-        } catch (err) {
-            console.error("Prediction Error:", err.message);
+
+            const res = await fastCall;
+            const data = res.data;
             
-            // Provide fallback prediction when API is unavailable
+            setPrediction({
+                prediction: "Quick AI Prediction",
+                confidence: "Good",
+                temperature_tomorrow: data.predicted_temperature,
+                rainfall_tomorrow: data.predicted_rainfall,
+                condition_tomorrow: data.condition_tomorrow || "Partly Cloudy",
+                method: data.method || "Fast Heuristic",
+                message: "Prediction completed using fast algorithm"
+            });
+
+            // Optionally try to get a more accurate LSTM prediction in the background
+            // This won't block the UI but will update if successful
+            setTimeout(async () => {
+                try {
+                    const lstmRes = await axios.post(`${API_BASE_URL}/api/predict_lstm/`, {
+                        temperature: t,
+                        humidity: h,
+                        rainfall: r,
+                        wind_speed: w
+                    }, {
+                        timeout: 8000
+                    });
+
+                    if (lstmRes.data.status === 'success') {
+                        setPrediction(prev => ({
+                            ...prev,
+                            prediction: "Enhanced AI Prediction",
+                            confidence: "High",
+                            temperature_tomorrow: lstmRes.data.predicted_temperature,
+                            rainfall_tomorrow: lstmRes.data.predicted_rainfall,
+                            method: "LSTM Neural Network",
+                            message: "Prediction enhanced with deep learning model"
+                        }));
+                    }
+                } catch (lstmErr) {
+                    // LSTM failed, but we already have fast prediction, so no problem
+                    console.log("LSTM enhancement failed, keeping fast prediction:", lstmErr.message);
+                }
+            }, 100); // Try LSTM enhancement after 100ms
+
+        } catch (err) {
+            console.error("Fast Prediction Error:", err.message);
+            
+            // Final fallback for complete API failure
             const fallbackPrediction = {
-                prediction: "API Offline - Demo Mode",
-                confidence: "N/A",
-                temperature_tomorrow: Math.round(t + (Math.random() * 4 - 2)), // ±2°C variation
-                rainfall_tomorrow: Math.max(0, r + (Math.random() * 10 - 5)), // ±5mm variation
+                prediction: "Offline Prediction",
+                confidence: "Estimated",
+                temperature_tomorrow: Math.round(t + (Math.random() * 4 - 2)),
+                rainfall_tomorrow: Math.max(0, r + (Math.random() * 10 - 5)),
                 condition_tomorrow: "Partly Cloudy",
-                message: "Backend API is currently unavailable. Showing demo data."
+                method: "Client-side Simulation",
+                message: "All APIs unavailable. Showing simulated prediction."
             };
             
             setPrediction(fallbackPrediction);

@@ -1,10 +1,11 @@
 from django.urls import path
-from .views import PredictWeatherView, CurrentWeatherView, MetricsView, PredictLSTMView, PredictConditionView, PredictEnsembleView, CitySearchView, ReverseGeocodeView, BackendStatusView, HealthCheckView
+from .views import PredictWeatherView, CurrentWeatherView, MetricsView, PredictLSTMView, PredictConditionView, PredictEnsembleView, CitySearchView, ReverseGeocodeView, BackendStatusView, HealthCheckView, FastPredictView
 
 urlpatterns = [
     path('health/', HealthCheckView.as_view(), name='health'),
     path('status/', BackendStatusView.as_view(), name='status'),
     path('predict/', PredictWeatherView.as_view(), name='predict'),
+    path('predict_fast/', FastPredictView.as_view(), name='predict_fast'),
     path('predict_lstm/', PredictLSTMView.as_view(), name='predict_lstm'),
     path('predict_ensemble/', PredictEnsembleView.as_view(), name='predict_ensemble'),
     path('predict_condition/', PredictConditionView.as_view(), name='predict_condition'),
