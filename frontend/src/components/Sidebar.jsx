@@ -9,10 +9,13 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
 
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
 
     const [currentWeather, setCurrentWeather] = useState({ temperature: '--', condition: 'loading', city: 'Loading...' });
 
     const fetchDefault = useCallback(async () => {
+        setIsLoading(true);
+        
         try {
             // Default to Coimbatore
             const res = await axios.get(`${API_BASE_URL}/api/current/?lat=11.0168&lon=76.9558&city=Coimbatore, Tamil Nadu, India`);
@@ -30,17 +33,20 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
             const fallback = 'Coimbatore, Tamil Nadu, India';
             setCurrentWeather(prev => ({ ...prev, city: fallback }));
             if (setLocationName) setLocationName(fallback);
+        } finally {
+            setIsLoading(false);
         }
     }, [setLocationName]);
 
     const fetchWeatherForCoords = useCallback(async (coords, autoNavigate) => {
+        setIsLoading(true);
+        let cityName = ''; // Move declaration outside try block
+        
         try {
             // Cancel any previous geocoding request
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
             }
-
-            let cityName = '';
             
             // Create cache key for coordinates (rounded to avoid too many cache entries)
             const cacheKey = `${coords.latitude.toFixed(3)},${coords.longitude.toFixed(3)}`;
@@ -109,13 +115,43 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
 
             // Proceed with weather request regardless of geocoding result
             const cityParam = cityName || '';
-            const weatherRes = await axios.get(
-                `${API_BASE_URL}/api/current/?lat=${coords.latitude}&lon=${coords.longitude}&city=${encodeURIComponent(cityParam)}`,
-                { 
-                    signal: abortControllerRef.current?.signal,
-                    timeout: 5000 // 5 second timeout for weather request
+            
+            // Implement retry logic for weather API
+            let weatherRes;
+            let retryCount = 0;
+            const maxRetries = 3;
+            
+            while (retryCount <= maxRetries) {
+                try {
+                    const timeoutDuration = 8000 + (retryCount * 2000); // Increase timeout with each retry
+                    
+                    weatherRes = await axios.get(
+                        `${API_BASE_URL}/api/current/?lat=${coords.latitude}&lon=${coords.longitude}&city=${encodeURIComponent(cityParam)}`,
+                        { 
+                            signal: abortControllerRef.current?.signal,
+                            timeout: timeoutDuration
+                        }
+                    );
+                    break; // Success, exit retry loop
+                    
+                } catch (weatherErr) {
+                    retryCount++;
+                    
+                    if (abortControllerRef.current?.signal.aborted) {
+                        throw weatherErr; // Don't retry if aborted
+                    }
+                    
+                    if (retryCount > maxRetries) {
+                        console.error(`Weather API failed after ${maxRetries} retries:`, weatherErr.message);
+                        throw weatherErr;
+                    }
+                    
+                    console.log(`Weather API retry ${retryCount}/${maxRetries} after error:`, weatherErr.message);
+                    
+                    // Wait before retry (exponential backoff)
+                    await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
                 }
-            );
+            }
             
             const displayCity = cityName || weatherRes.data.city || `${coords.latitude.toFixed(2)}, ${coords.longitude.toFixed(2)}`;
 
@@ -137,9 +173,34 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
             // Only log if not aborted
             if (!abortControllerRef.current?.signal.aborted) {
                 console.error("Weather fetch error:", error.message);
+                
+                // Provide fallback data when API is unavailable
+                const fallbackCity = cityName || `${coords.latitude.toFixed(2)}, ${coords.longitude.toFixed(2)}`;
+                
+                setCurrentWeather({
+                    temperature: '--',
+                    condition: 'API Unavailable',
+                    city: fallbackCity,
+                    humidity: '--',
+                    wind_speed: '--'
+                });
+                
+                if (setLocationName) setLocationName(fallbackCity);
+                
+                // Still navigate if requested, even with fallback data
+                if (autoNavigate) {
+                    navigate(`/dashboard?lat=${coords.latitude}&lon=${coords.longitude}&city=${encodeURIComponent(fallbackCity)}`);
+                    if (closeSidebar) closeSidebar();
+                }
+                
+                // Don't call fetchDefault if we have coordinates - use the fallback instead
+                return;
             }
-            // On error, fall back to default location
+            
+            // Only fall back to default location if request was aborted or no coordinates
             fetchDefault();
+        } finally {
+            setIsLoading(false);
         }
     }, [setLocationName, navigate, closeSidebar, fetchDefault]);
 
@@ -284,11 +345,13 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                 <div className="d-flex flex-column align-items-center position-relative">
 
                     <span className="weather-icon mb-2 drop-shadow" style={{ fontSize: '3.5rem' }}>
-                        {getWeatherIcon(currentWeather.condition)}
+                        {isLoading ? '⏳' : getWeatherIcon(currentWeather.condition)}
                     </span>
-                    <h1 className="fw-bold mb-0 display-4 text-white text-shadow">{currentWeather.temperature}°</h1>
+                    <h1 className="fw-bold mb-0 display-4 text-white text-shadow">
+                        {isLoading ? '...' : currentWeather.temperature}°
+                    </h1>
                     <span className="badge bg-white bg-opacity-10 text-white border border-white border-opacity-10 rounded-pill px-3 py-1 mb-3">
-                        {currentWeather.condition}
+                        {isLoading ? 'Loading weather...' : currentWeather.condition}
                     </span>
 
                     <div className="d-flex align-items-center text-white-50 small mb-3">
