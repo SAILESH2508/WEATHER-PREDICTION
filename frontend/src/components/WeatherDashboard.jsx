@@ -45,8 +45,8 @@ const WeatherDashboard = ({ locationName }) => {
         setPrediction({
             prediction: "Analyzing...",
             confidence: "Processing",
-            temperature_tomorrow: "...",
-            rainfall_tomorrow: "...",
+            predicted_temperature: "...",
+            predicted_rainfall: "...",
             condition_tomorrow: "Loading...",
             message: "Processing your weather prediction..."
         });
@@ -68,8 +68,8 @@ const WeatherDashboard = ({ locationName }) => {
             setPrediction({
                 prediction: "Quick AI Prediction",
                 confidence: "Good",
-                temperature_tomorrow: data.predicted_temperature,
-                rainfall_tomorrow: data.predicted_rainfall,
+                predicted_temperature: data.predicted_temperature,
+                predicted_rainfall: data.predicted_rainfall,
                 condition_tomorrow: data.condition_tomorrow || "Partly Cloudy",
                 method: data.method || "Fast Heuristic",
                 message: "Prediction completed using fast algorithm"
@@ -93,8 +93,8 @@ const WeatherDashboard = ({ locationName }) => {
                             ...prev,
                             prediction: "Enhanced AI Prediction",
                             confidence: "High",
-                            temperature_tomorrow: lstmRes.data.predicted_temperature,
-                            rainfall_tomorrow: lstmRes.data.predicted_rainfall,
+                            predicted_temperature: lstmRes.data.predicted_temperature,
+                            predicted_rainfall: lstmRes.data.predicted_rainfall,
                             method: "LSTM Neural Network",
                             message: "Prediction enhanced with deep learning model"
                         }));
@@ -112,8 +112,8 @@ const WeatherDashboard = ({ locationName }) => {
             const fallbackPrediction = {
                 prediction: "Offline Prediction",
                 confidence: "Estimated",
-                temperature_tomorrow: Math.round(t + (Math.random() * 4 - 2)),
-                rainfall_tomorrow: Math.max(0, r + (Math.random() * 10 - 5)),
+                predicted_temperature: Math.round(t + (Math.random() * 4 - 2)),
+                predicted_rainfall: Math.max(0, r + (Math.random() * 10 - 5)),
                 condition_tomorrow: "Partly Cloudy",
                 method: "Client-side Simulation",
                 message: "All APIs unavailable. Showing simulated prediction."
@@ -348,7 +348,11 @@ const WeatherDashboard = ({ locationName }) => {
                                     {prediction ? (
                                         <>
                                             <h4 className="mb-3 text-center text-white">
-                                                Condition: <span className="badge bg-warning text-dark fs-6">{prediction.classification || (prediction.predicted_rainfall > 0 ? 'Rainy' : 'Sunny')}</span>
+                                                Condition: <span className="badge bg-warning text-dark fs-6">
+                                                    {prediction.condition_tomorrow || 
+                                                     prediction.classification || 
+                                                     (prediction.predicted_rainfall && prediction.predicted_rainfall > 0 ? 'Rainy' : 'Sunny')}
+                                                </span>
                                             </h4>
 
                                             {/* RESTORED SPLIT CARD DESIGN */}
@@ -356,13 +360,17 @@ const WeatherDashboard = ({ locationName }) => {
                                                 <div className="col-6">
                                                     <div className="p-3 border border-white border-opacity-25 rounded text-center shadow-sm" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
                                                         <h5 className="mb-2 text-warning small text-uppercase fw-bold">Predicted Temp</h5>
-                                                        <h2 className="text-white mb-0 fw-bold">{prediction.predicted_temperature}°C</h2>
+                                                        <h2 className="text-white mb-0 fw-bold">
+                                                            {prediction.predicted_temperature || '...'}°C
+                                                        </h2>
                                                     </div>
                                                 </div>
                                                 <div className="col-6">
                                                     <div className="p-3 border border-white border-opacity-25 rounded text-center shadow-sm" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
                                                         <h5 className="mb-2 text-info small text-uppercase fw-bold">Predicted Rain</h5>
-                                                        <h2 className="text-white mb-0 fw-bold">{prediction.predicted_rainfall} mm</h2>
+                                                        <h2 className="text-white mb-0 fw-bold">
+                                                            {prediction.predicted_rainfall || '0'} mm
+                                                        </h2>
                                                     </div>
                                                 </div>
                                             </div>
@@ -375,7 +383,10 @@ const WeatherDashboard = ({ locationName }) => {
                                                         labels: ['Temp (°C)', 'Rain (mm)'],
                                                         datasets: [{
                                                             label: 'Predicted Values',
-                                                            data: [prediction.predicted_temperature, prediction.predicted_rainfall],
+                                                            data: [
+                                                                prediction.predicted_temperature || 0, 
+                                                                prediction.predicted_rainfall || 0
+                                                            ],
                                                             backgroundColor: ['rgba(255, 206, 86, 0.7)', 'rgba(54, 162, 235, 0.7)'],
                                                             borderColor: ['rgba(255, 206, 86, 1)', 'rgba(54, 162, 235, 1)'],
                                                             borderWidth: 1
