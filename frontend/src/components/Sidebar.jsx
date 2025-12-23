@@ -94,6 +94,7 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                     });
 
                     const geoRes = await Promise.race([geocodingPromise, timeoutPromise]);
+                    console.log('Geocoding response:', geoRes.data);
 
                     if (geoRes.data && geoRes.data.results && geoRes.data.results.length > 0) {
                         const result = geoRes.data.results[0];
@@ -101,6 +102,7 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                         if (result.admin1 && result.admin1 !== result.name) {
                             cityName += `, ${result.admin1}`;
                         }
+                        console.log('Geocoded city name:', cityName);
                         
                         // Cache the result
                         geocodeCache.current.set(cacheKey, {
@@ -113,11 +115,31 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                             const firstKey = geocodeCache.current.keys().next().value;
                             geocodeCache.current.delete(firstKey);
                         }
+                    } else {
+                        console.log('No geocoding results found');
                     }
                 } catch (geoErr) {
                     // Only log actual errors, not cancellations
                     if (!signal.aborted && geoErr.name !== 'AbortError' && geoErr.code !== 'ECONNABORTED') {
                         console.log("Geocoding unavailable, using coordinates");
+                    }
+                    // Try to get a basic location name from coordinates as fallback
+                    if (!cityName) {
+                        // Simple coordinate-based city naming as last resort
+                        const lat = coords.latitude;
+                        const lon = coords.longitude;
+                        
+                        // Very basic region detection (this is a fallback)
+                        if (lat >= 25 && lat <= 49 && lon >= -125 && lon <= -66) {
+                            cityName = `Location in USA (${lat.toFixed(2)}, ${lon.toFixed(2)})`;
+                        } else if (lat >= 49 && lat <= 60 && lon >= -141 && lon <= -52) {
+                            cityName = `Location in Canada (${lat.toFixed(2)}, ${lon.toFixed(2)})`;
+                        } else if (lat >= 6 && lat <= 37 && lon >= 68 && lon <= 97) {
+                            cityName = `Location in India (${lat.toFixed(2)}, ${lon.toFixed(2)})`;
+                        } else {
+                            cityName = `Your Location (${lat.toFixed(2)}, ${lon.toFixed(2)})`;
+                        }
+                        console.log('Using coordinate-based fallback city:', cityName);
                     }
                     // Continue without city name - we'll use coordinates or API response
                 }
@@ -164,6 +186,12 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
             }
             
             const displayCity = cityName || weatherRes.data.city || `${coords.latitude.toFixed(2)}, ${coords.longitude.toFixed(2)}`;
+            console.log('Display city components:', {
+                cityName,
+                apiCity: weatherRes.data.city,
+                coordinates: `${coords.latitude.toFixed(2)}, ${coords.longitude.toFixed(2)}`,
+                finalDisplayCity: displayCity
+            });
 
             setCurrentWeather({
                 temperature: Math.round(weatherRes.data.temperature),
@@ -174,9 +202,12 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
             });
             
             if (setLocationName) setLocationName(displayCity);
+            console.log('Set location name to:', displayCity);
 
             if (autoNavigate) {
-                navigate(`/dashboard?lat=${coords.latitude}&lon=${coords.longitude}&city=${encodeURIComponent(displayCity)}`);
+                const navigationUrl = `/dashboard?lat=${coords.latitude}&lon=${coords.longitude}&city=${encodeURIComponent(displayCity)}`;
+                console.log('Navigating to:', navigationUrl);
+                navigate(navigationUrl);
                 if (closeSidebar) closeSidebar();
             }
         } catch (error) {
