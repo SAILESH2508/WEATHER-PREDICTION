@@ -86,24 +86,34 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                         `${API_BASE_URL}/api/reverse-geocode/?latitude=${coords.latitude}&longitude=${coords.longitude}`,
                         { 
                             signal,
-                            timeout: 3000 // 3 second timeout
+                            timeout: 5000 // Increased timeout for better geocoding
                         }
                     );
 
                     const timeoutPromise = new Promise((_, reject) => {
-                        setTimeout(() => reject(new Error('Geocoding timeout')), 2500);
+                        setTimeout(() => reject(new Error('Geocoding timeout')), 4500);
                     });
 
                     const geoRes = await Promise.race([geocodingPromise, timeoutPromise]);
-                    console.log('Detailed geocoding response:', geoRes.data); // Temporary debug
+                    console.log('Geocoding response:', geoRes.data);
 
                     if (geoRes.data && geoRes.data.results && geoRes.data.results.length > 0) {
                         const result = geoRes.data.results[0];
+                        console.log('Geocoded city name:', result.name);
+                        
+                        // Enhanced city name processing
                         if (result.name) {
                             cityName = result.name;
-                            if (result.admin1 && result.admin1 !== result.name) {
-                                cityName += `, ${result.admin1}`;
-                            }
+                            
+                            // Log precision and source information
+                            console.log('Display city components:', {
+                                cityName: result.name,
+                                apiCity: result.name,
+                                coordinates: `${coords.latitude.toFixed(3)}°, ${coords.longitude.toFixed(3)}°`,
+                                finalDisplayCity: result.name,
+                                precision: result.precision || 'unknown',
+                                source: result.source || 'unknown'
+                            });
                             
                             // Cache the result
                             geocodeCache.current.set(cacheKey, {
@@ -119,6 +129,7 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                         }
                     }
                 } catch (geoErr) {
+                    console.error('Geocoding failed:', geoErr.message);
                     // Geocoding failed, will use fallback
                 }
                 
@@ -174,6 +185,8 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
             
             const displayCity = cityName || weatherRes.data.city || `Your Location (${coords.latitude.toFixed(3)}°, ${coords.longitude.toFixed(3)}°)`;
 
+            console.log('Set location name to:', displayCity);
+
             setCurrentWeather({
                 temperature: Math.round(weatherRes.data.temperature),
                 condition: weatherRes.data.description,
@@ -185,6 +198,7 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
             if (setLocationName) setLocationName(displayCity);
 
             if (autoNavigate) {
+                console.log('Navigating to:', `/dashboard?lat=${coords.latitude}&lon=${coords.longitude}&city=${encodeURIComponent(displayCity)}`);
                 navigate(`/dashboard?lat=${coords.latitude}&lon=${coords.longitude}&city=${encodeURIComponent(displayCity)}`);
                 if (closeSidebar) closeSidebar();
             }
@@ -228,6 +242,8 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
     const geocodeCache = useRef(new Map());
 
     const handleLocationClick = useCallback(async (autoNavigate = true) => {
+        console.log('Location button clicked!');
+        console.log('🎯 handleLocationClick called with autoNavigate:', autoNavigate);
         setIsGettingLocation(true);
         
         if (!navigator.geolocation) {
@@ -248,27 +264,59 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
             clearTimeout(debounceTimeoutRef.current);
         }
 
+        console.log('🔄 Starting geolocation request...');
+
         // Debounce the geolocation request
         debounceTimeoutRef.current = setTimeout(() => {
+            console.log('⏰ Debounce timeout completed, calling geolocation API...');
             isRequestingRef.current = true;
             
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
+                    console.log('✅ Got geolocation position:', pos.coords);
+                    console.log('🎯 ULTRA-PRECISE GPS Coordinates:', {
+                        latitude: pos.coords.latitude,
+                        longitude: pos.coords.longitude,
+                        accuracy: pos.coords.accuracy,
+                        altitudeAccuracy: pos.coords.altitudeAccuracy,
+                        heading: pos.coords.heading,
+                        speed: pos.coords.speed,
+                        timestamp: new Date(pos.timestamp).toLocaleString(),
+                        precision: pos.coords.accuracy < 10 ? 'Very High' : pos.coords.accuracy < 50 ? 'High' : 'Medium'
+                    });
                     fetchWeatherForCoords(pos.coords, autoNavigate).finally(() => {
                         isRequestingRef.current = false;
                         setIsGettingLocation(false);
                     });
                 },
                 (error) => {
+                    console.error('❌ Geolocation error:', error);
                     isRequestingRef.current = false;
                     setIsGettingLocation(false);
-                    if (autoNavigate) alert("Unable to retrieve your location. Please check browser permissions.");
+                    
+                    let errorMessage = "Unable to retrieve your location. ";
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage += "Please allow location access in your browser settings.";
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage += "Location information is unavailable. Try moving to an area with better GPS signal.";
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage += "Location request timed out. Please try again.";
+                            break;
+                        default:
+                            errorMessage += "An unknown error occurred.";
+                            break;
+                    }
+                    
+                    if (autoNavigate) alert(errorMessage);
                     fetchDefault();
                 },
                 { 
-                    enableHighAccuracy: true, // Enable high accuracy for precise location
-                    timeout: 15000, // Longer timeout for precise location
-                    maximumAge: 60000 // Shorter cache age for more current location
+                    enableHighAccuracy: true,    // Enable high accuracy for precise location
+                    timeout: 20000,              // Longer timeout for precise location (20 seconds)
+                    maximumAge: 30000            // Shorter cache age for more current location (30 seconds)
                 }
             );
         }, 500);

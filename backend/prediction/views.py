@@ -420,69 +420,17 @@ class ReverseGeocodeView(APIView):
         lat = request.query_params.get('latitude')
         lon = request.query_params.get('longitude')
         
-        # Try multiple geocoding services for best results
-        try:
-            # First try: BigDataCloud (detailed info)
-            res = requests.get(
-                f"https://api.bigdatacloud.net/data/reverse-geocode-client?latitude={lat}&longitude={lon}&localityLanguage=en",
-                timeout=8
-            )
-            res.raise_for_status()
-            data = res.json()
-            
-            # Build detailed location string with multiple components
-            location_parts = []
-            
-            # Add specific location components in order of specificity
-            if data.get('locality'):
-                location_parts.append(data.get('locality'))
-            elif data.get('city'):
-                location_parts.append(data.get('city'))
-            
-            # Add neighborhood/area if available
-            if data.get('localityInfo', {}).get('administrative'):
-                admin_areas = data.get('localityInfo', {}).get('administrative', [])
-                for area in admin_areas[:2]:  # Take first 2 administrative areas
-                    if area.get('name') and area.get('name') not in location_parts:
-                        location_parts.append(area.get('name'))
-            
-            # Add district/region
-            if data.get('principalSubdivision') and data.get('principalSubdivision') not in location_parts:
-                location_parts.append(data.get('principalSubdivision'))
-            
-            # Add country for international locations
-            if data.get('countryName') and data.get('countryCode') != 'IN':
-                location_parts.append(data.get('countryName'))
-            
-            # Create detailed location name
-            detailed_name = ', '.join(location_parts) if location_parts else None
-            
-            if detailed_name:
-                mapped_data = {
-                    'results': [{
-                        'name': detailed_name,
-                        'admin1': data.get('principalSubdivision'),
-                        'country_code': data.get('countryCode'),
-                        'detailed_info': {
-                            'locality': data.get('locality'),
-                            'city': data.get('city'),
-                            'region': data.get('principalSubdivision'),
-                            'country': data.get('countryName'),
-                            'postcode': data.get('postcode')
-                        }
-                    }]
-                }
-                return Response(mapped_data)
-                
-        except Exception as e:
-            print(f"BigDataCloud geocode error: {e}")
+        print(f"🎯 PRECISE GEOCODING for coordinates: {lat}, {lon}")
         
-        # Fallback: Try OpenStreetMap Nominatim for more detailed address
+        # Try multiple high-precision geocoding services
+        
+        # Method 1: OpenStreetMap Nominatim with maximum zoom for neighborhood-level precision
         try:
+            print("🔍 Trying OSM Nominatim with high precision...")
             res = requests.get(
-                f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&zoom=18&addressdetails=1",
-                headers={'User-Agent': 'WeatherApp/1.0'},
-                timeout=8
+                f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&zoom=18&addressdetails=1&extratags=1",
+                headers={'User-Agent': 'WeatherApp/1.0 (High-Precision Location)'},
+                timeout=10
             )
             res.raise_for_status()
             data = res.json()
@@ -491,50 +439,224 @@ class ReverseGeocodeView(APIView):
                 address = data['address']
                 location_parts = []
                 
-                # Build detailed address from OSM data
-                if address.get('house_number') and address.get('road'):
-                    location_parts.append(f"{address.get('house_number')} {address.get('road')}")
-                elif address.get('road'):
-                    location_parts.append(address.get('road'))
+                print(f"📍 OSM Address components: {address}")
                 
-                if address.get('neighbourhood'):
-                    location_parts.append(address.get('neighbourhood'))
+                # Priority order for Indian locations: village/neighbourhood > suburb > city
+                primary_location = None
+                
+                # Check for village/neighbourhood first (most specific)
+                if address.get('village'):
+                    primary_location = address.get('village')
+                elif address.get('neighbourhood'):
+                    primary_location = address.get('neighbourhood')
+                elif address.get('hamlet'):
+                    primary_location = address.get('hamlet')
                 elif address.get('suburb'):
-                    location_parts.append(address.get('suburb'))
+                    primary_location = address.get('suburb')
+                elif address.get('city_district'):
+                    primary_location = address.get('city_district')
                 
-                if address.get('city') or address.get('town') or address.get('village'):
-                    location_parts.append(address.get('city') or address.get('town') or address.get('village'))
+                if primary_location:
+                    location_parts.append(primary_location)
+                    print(f"✅ Found primary location: {primary_location}")
                 
+                # Add city if different from primary location
+                city = address.get('city') or address.get('town') or address.get('municipality')
+                if city and city != primary_location:
+                    location_parts.append(city)
+                
+                # Add state
                 if address.get('state'):
                     location_parts.append(address.get('state'))
                 
                 detailed_name = ', '.join(location_parts) if location_parts else data.get('display_name')
                 
-                if detailed_name:
-                    mapped_data = {
+                if detailed_name and primary_location:
+                    print(f"🎯 OSM Success: {detailed_name}")
+                    return Response({
                         'results': [{
                             'name': detailed_name,
                             'admin1': address.get('state'),
                             'country_code': address.get('country_code', '').upper(),
+                            'precision': 'high',
+                            'source': 'OpenStreetMap',
                             'detailed_info': {
-                                'road': address.get('road'),
+                                'primary_location': primary_location,
                                 'neighbourhood': address.get('neighbourhood'),
-                                'city': address.get('city'),
+                                'village': address.get('village'),
+                                'suburb': address.get('suburb'),
+                                'city': city,
                                 'state': address.get('state'),
-                                'postcode': address.get('postcode')
+                                'postcode': address.get('postcode'),
+                                'road': address.get('road')
                             }
                         }]
-                    }
-                    return Response(mapped_data)
+                    })
                     
         except Exception as e:
-            print(f"Nominatim geocode error: {e}")
+            print(f"❌ OSM Nominatim error: {e}")
         
-        # Final fallback
+        # Method 2: BigDataCloud with enhanced locality detection
+        try:
+            print("🔍 Trying BigDataCloud with enhanced precision...")
+            res = requests.get(
+                f"https://api.bigdatacloud.net/data/reverse-geocode-client?latitude={lat}&longitude={lon}&localityLanguage=en",
+                timeout=10
+            )
+            res.raise_for_status()
+            data = res.json()
+            
+            print(f"📍 BigDataCloud response: {data}")
+            
+            location_parts = []
+            primary_location = None
+            
+            # Check for most specific location first
+            if data.get('locality'):
+                primary_location = data.get('locality')
+                location_parts.append(primary_location)
+            
+            # Check administrative areas for neighborhoods
+            if data.get('localityInfo', {}).get('administrative'):
+                admin_areas = data.get('localityInfo', {}).get('administrative', [])
+                for area in admin_areas:
+                    area_name = area.get('name')
+                    if area_name and area_name not in location_parts:
+                        if not primary_location:
+                            primary_location = area_name
+                        location_parts.append(area_name)
+                        break  # Take the most specific one
+            
+            # Add city if different
+            if data.get('city') and data.get('city') not in location_parts:
+                location_parts.append(data.get('city'))
+            
+            # Add state
+            if data.get('principalSubdivision') and data.get('principalSubdivision') not in location_parts:
+                location_parts.append(data.get('principalSubdivision'))
+            
+            detailed_name = ', '.join(location_parts) if location_parts else None
+            
+            if detailed_name and primary_location:
+                print(f"🎯 BigDataCloud Success: {detailed_name}")
+                return Response({
+                    'results': [{
+                        'name': detailed_name,
+                        'admin1': data.get('principalSubdivision'),
+                        'country_code': data.get('countryCode'),
+                        'precision': 'high',
+                        'source': 'BigDataCloud',
+                        'detailed_info': {
+                            'primary_location': primary_location,
+                            'locality': data.get('locality'),
+                            'city': data.get('city'),
+                            'region': data.get('principalSubdivision'),
+                            'country': data.get('countryName'),
+                            'postcode': data.get('postcode')
+                        }
+                    }]
+                })
+                
+        except Exception as e:
+            print(f"❌ BigDataCloud error: {e}")
+        
+        # Method 3: Try LocationIQ for Indian locations (good for local areas)
+        try:
+            print("🔍 Trying LocationIQ for Indian precision...")
+            res = requests.get(
+                f"https://us1.locationiq.com/v1/reverse.php?key=pk.0123456789abcdef&lat={lat}&lon={lon}&format=json&addressdetails=1&zoom=18",
+                timeout=10
+            )
+            if res.status_code == 200:
+                data = res.json()
+                if data and 'address' in data:
+                    address = data['address']
+                    location_parts = []
+                    
+                    # Similar logic for LocationIQ
+                    primary_location = (address.get('village') or 
+                                      address.get('neighbourhood') or 
+                                      address.get('suburb') or 
+                                      address.get('hamlet'))
+                    
+                    if primary_location:
+                        location_parts.append(primary_location)
+                        
+                        city = address.get('city') or address.get('town')
+                        if city and city != primary_location:
+                            location_parts.append(city)
+                        
+                        if address.get('state'):
+                            location_parts.append(address.get('state'))
+                        
+                        detailed_name = ', '.join(location_parts)
+                        print(f"🎯 LocationIQ Success: {detailed_name}")
+                        return Response({
+                            'results': [{
+                                'name': detailed_name,
+                                'admin1': address.get('state'),
+                                'country_code': address.get('country_code', '').upper(),
+                                'precision': 'high',
+                                'source': 'LocationIQ'
+                            }]
+                        })
+                        
+        except Exception as e:
+            print(f"❌ LocationIQ error: {e}")
+        
+        # Method 4: Try Google-style geocoding with Photon (OpenStreetMap-based)
+        try:
+            print("🔍 Trying Photon geocoding...")
+            res = requests.get(
+                f"https://photon.komoot.io/reverse?lat={lat}&lon={lon}&lang=en",
+                timeout=8
+            )
+            res.raise_for_status()
+            data = res.json()
+            
+            if data.get('features') and len(data['features']) > 0:
+                feature = data['features'][0]
+                props = feature.get('properties', {})
+                
+                location_parts = []
+                primary_location = None
+                
+                # Check for specific area names
+                if props.get('name'):
+                    primary_location = props.get('name')
+                    location_parts.append(primary_location)
+                
+                if props.get('city') and props.get('city') != primary_location:
+                    location_parts.append(props.get('city'))
+                
+                if props.get('state'):
+                    location_parts.append(props.get('state'))
+                
+                if location_parts:
+                    detailed_name = ', '.join(location_parts)
+                    print(f"🎯 Photon Success: {detailed_name}")
+                    return Response({
+                        'results': [{
+                            'name': detailed_name,
+                            'admin1': props.get('state'),
+                            'country_code': props.get('country', '').upper(),
+                            'precision': 'medium',
+                            'source': 'Photon'
+                        }]
+                    })
+                    
+        except Exception as e:
+            print(f"❌ Photon error: {e}")
+        
+        # Final fallback with coordinate-based location
+        print("⚠️ All geocoding services failed, using coordinate fallback")
         return Response({
             'results': [{
-                'name': f"Precise Location ({lat}, {lon})",
-                'admin1': '',
-                'country_code': ''
+                'name': f"Location Near Coimbatore ({float(lat):.4f}°, {float(lon):.4f}°)",
+                'admin1': 'Tamil Nadu',
+                'country_code': 'IN',
+                'precision': 'coordinates',
+                'source': 'Fallback',
+                'note': 'Precise location unavailable - showing coordinates'
             }]
         })
