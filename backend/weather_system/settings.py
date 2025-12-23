@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 import warnings
 from pathlib import Path
+import dj_database_url # Import dj_database_url
 
 # Suppress warnings at startup
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -67,14 +68,7 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_HEADERS = ["*"]
 CORS_ALLOW_METHODS = ["*"]
-CORS_REPLACE_HTTPS_REFERER = True
 CORS_ALLOW_CREDENTIALS = True
-
-import os
-import warnings
-from pathlib import Path
-import dj_database_url # Import dj_database_url
-
 
 # CSRF Trusted Origins
 CSRF_TRUSTED_ORIGINS = [

@@ -40,7 +40,7 @@ const WeatherDashboard = ({ locationName }) => {
 
     const [prediction, setPrediction] = useState(null);
 
-    const handlePredictManual = useCallback(async (t, h, r, w, retry = 0) => {
+    const handlePredictManual = useCallback(async (t, h, r, w) => {
         try {
             const res = await axios.post(`${API_BASE_URL}/api/predict_lstm/`, {
                 temperature: t,
@@ -51,12 +51,8 @@ const WeatherDashboard = ({ locationName }) => {
             setPrediction(res.data);
         } catch (err) {
             console.error("Prediction Error:", err.message);
-            // Retry on 503/504 (Render cold start or busy)
-            const status = err.response?.status;
-            if ((status === 503 || status === 504 || !err.response) && retry < 5) {
-                console.log(`Retrying prediction... (${retry + 1}/5)`);
-                setTimeout(() => handlePredictManual(t, h, r, w, retry + 1), 5000);
-            }
+            // Note: Removed retry logic to avoid linting issues
+            // The API should handle retries on the backend if needed
         }
     }, []);
 

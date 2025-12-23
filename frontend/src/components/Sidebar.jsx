@@ -1,17 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 
 const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
     const navigate = useNavigate();
+    const abortControllerRef = useRef(null);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
 
     const [currentWeather, setCurrentWeather] = useState({ temperature: '--', condition: 'loading', city: 'Loading...' });
 
-    const fetchDefault = async () => {
+    const fetchDefault = useCallback(async () => {
         try {
             // Default to Coimbatore
             const res = await axios.get(`${API_BASE_URL}/api/current/?lat=11.0168&lon=76.9558&city=Coimbatore, Tamil Nadu, India`);
@@ -30,32 +31,92 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
             setCurrentWeather(prev => ({ ...prev, city: fallback }));
             if (setLocationName) setLocationName(fallback);
         }
-    };
+    }, [setLocationName]);
 
-    const fetchWeatherForCoords = async (coords, autoNavigate, retry = 0) => {
+    const fetchWeatherForCoords = useCallback(async (coords, autoNavigate) => {
         try {
-            let cityName = '';
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 30000);
-
-                const geoRes = await axios.get(
-                    `${API_BASE_URL}/api/reverse-geocode/?latitude=${coords.latitude}&longitude=${coords.longitude}`,
-                    { signal: controller.signal }
-                );
-                clearTimeout(timeoutId);
-
-                if (geoRes.data.results && geoRes.data.results.length > 0) {
-                    const result = geoRes.data.results[0];
-                    cityName = result.name;
-                    if (result.admin1 && result.admin1 !== result.name) cityName += `, ${result.admin1}`;
-                }
-            } catch (geoErr) {
-                console.warn("Reverse geocoding failed:", geoErr.message);
+            // Cancel any previous geocoding request
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
             }
 
+            let cityName = '';
+            
+            // Create cache key for coordinates (rounded to avoid too many cache entries)
+            const cacheKey = `${coords.latitude.toFixed(3)},${coords.longitude.toFixed(3)}`;
+            
+            // Check cache first
+            if (geocodeCache.current.has(cacheKey)) {
+                const cachedData = geocodeCache.current.get(cacheKey);
+                const now = Date.now();
+                // Use cached data if it's less than 10 minutes old
+                if (now - cachedData.timestamp < 600000) {
+                    cityName = cachedData.cityName;
+                } else {
+                    geocodeCache.current.delete(cacheKey);
+                }
+            }
+            
+            // Only geocode if not in cache
+            if (!cityName) {
+                // Create a new abort controller for this request
+                abortControllerRef.current = new AbortController();
+                const signal = abortControllerRef.current.signal;
+                
+                try {
+                    // Use a race between the request and a timeout
+                    const geocodingPromise = axios.get(
+                        `${API_BASE_URL}/api/reverse-geocode/?latitude=${coords.latitude}&longitude=${coords.longitude}`,
+                        { 
+                            signal,
+                            timeout: 3000 // 3 second timeout
+                        }
+                    );
+
+                    const timeoutPromise = new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error('Geocoding timeout')), 2500);
+                    });
+
+                    const geoRes = await Promise.race([geocodingPromise, timeoutPromise]);
+
+                    if (geoRes.data && geoRes.data.results && geoRes.data.results.length > 0) {
+                        const result = geoRes.data.results[0];
+                        cityName = result.name;
+                        if (result.admin1 && result.admin1 !== result.name) {
+                            cityName += `, ${result.admin1}`;
+                        }
+                        
+                        // Cache the result
+                        geocodeCache.current.set(cacheKey, {
+                            cityName,
+                            timestamp: Date.now()
+                        });
+                        
+                        // Limit cache size to prevent memory issues
+                        if (geocodeCache.current.size > 50) {
+                            const firstKey = geocodeCache.current.keys().next().value;
+                            geocodeCache.current.delete(firstKey);
+                        }
+                    }
+                } catch (geoErr) {
+                    // Only log actual errors, not cancellations
+                    if (!signal.aborted && geoErr.name !== 'AbortError' && geoErr.code !== 'ECONNABORTED') {
+                        console.log("Geocoding unavailable, using coordinates");
+                    }
+                    // Continue without city name - we'll use coordinates or API response
+                }
+            }
+
+            // Proceed with weather request regardless of geocoding result
             const cityParam = cityName || '';
-            const weatherRes = await axios.get(`${API_BASE_URL}/api/current/?lat=${coords.latitude}&lon=${coords.longitude}&city=${encodeURIComponent(cityParam)}`);
+            const weatherRes = await axios.get(
+                `${API_BASE_URL}/api/current/?lat=${coords.latitude}&lon=${coords.longitude}&city=${encodeURIComponent(cityParam)}`,
+                { 
+                    signal: abortControllerRef.current?.signal,
+                    timeout: 5000 // 5 second timeout for weather request
+                }
+            );
+            
             const displayCity = cityName || weatherRes.data.city || `${coords.latitude.toFixed(2)}, ${coords.longitude.toFixed(2)}`;
 
             setCurrentWeather({
@@ -65,6 +126,7 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                 humidity: weatherRes.data.humidity,
                 wind_speed: weatherRes.data.wind_speed
             });
+            
             if (setLocationName) setLocationName(displayCity);
 
             if (autoNavigate) {
@@ -72,39 +134,81 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                 if (closeSidebar) closeSidebar();
             }
         } catch (error) {
-            console.error("Weather fetch error:", error.message);
-            const status = error.response?.status;
-            if ((status === 503 || status === 504 || !error.response) && retry < 5) {
-                console.log(`Sidebar API retrying... (${retry + 1}/5)`);
-                setTimeout(() => fetchWeatherForCoords(coords, autoNavigate, retry + 1), 5000);
-            } else {
-                fetchDefault();
+            // Only log if not aborted
+            if (!abortControllerRef.current?.signal.aborted) {
+                console.error("Weather fetch error:", error.message);
             }
+            // On error, fall back to default location
+            fetchDefault();
         }
-    };
+    }, [setLocationName, navigate, closeSidebar, fetchDefault]);
 
-    const handleLocationClick = async (autoNavigate = true) => {
+    const debounceTimeoutRef = useRef(null);
+    const isRequestingRef = useRef(false);
+    const geocodeCache = useRef(new Map());
+
+    const handleLocationClick = useCallback(async (autoNavigate = true) => {
         if (!navigator.geolocation) {
             alert("Geolocation is not supported by this browser.");
             fetchDefault();
             return;
         }
 
-        navigator.geolocation.getCurrentPosition(
-            (pos) => fetchWeatherForCoords(pos.coords, autoNavigate),
-            (error) => {
-                console.warn("Geolocation error:", error.message);
-                if (autoNavigate) alert("Unable to retrieve your location. Please check browser permissions.");
-                fetchDefault();
-            },
-            { enableHighAccuracy: false, timeout: 30000, maximumAge: 300000 }
-        );
-    };
+        // Prevent multiple simultaneous requests
+        if (isRequestingRef.current) {
+            console.log("Location request already in progress, skipping...");
+            return;
+        }
+
+        // Clear any existing debounce timeout
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+        }
+
+        // Debounce the geolocation request
+        debounceTimeoutRef.current = setTimeout(() => {
+            isRequestingRef.current = true;
+            
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    fetchWeatherForCoords(pos.coords, autoNavigate).finally(() => {
+                        isRequestingRef.current = false;
+                    });
+                },
+                (error) => {
+                    isRequestingRef.current = false;
+                    console.warn("Geolocation error:", error.message);
+                    if (autoNavigate) alert("Unable to retrieve your location. Please check browser permissions.");
+                    fetchDefault();
+                },
+                { 
+                    enableHighAccuracy: false, 
+                    timeout: 10000, // Reduced timeout
+                    maximumAge: 300000 // Reduced cache age to 5 minutes
+                }
+            );
+        }, 500); // Increased debounce to 500ms
+    }, [fetchDefault, fetchWeatherForCoords]);
 
     useEffect(() => {
-        // Initial load - fetch but don't force navigate (pass false)
-        handleLocationClick(false);
+        // Cleanup function to cancel any pending requests
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current);
+            }
+            // Reset request state
+            isRequestingRef.current = false;
+        };
     }, []);
+
+    // Initial load - legitimate initialization on mount
+    useEffect(() => {
+        handleLocationClick(false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Empty deps - this should only run once on mount
 
     const getWeatherIcon = (c) => {
         if (!c) return '🌤️';
