@@ -419,24 +419,122 @@ class ReverseGeocodeView(APIView):
     def get(self, request):
         lat = request.query_params.get('latitude')
         lon = request.query_params.get('longitude')
+        
+        # Try multiple geocoding services for best results
         try:
-            # Using BigDataCloud reverse-geocode-client API (Free, no key required for client-side/small volume)
+            # First try: BigDataCloud (detailed info)
             res = requests.get(
                 f"https://api.bigdatacloud.net/data/reverse-geocode-client?latitude={lat}&longitude={lon}&localityLanguage=en",
-                timeout=10
+                timeout=8
             )
             res.raise_for_status()
             data = res.json()
             
-            # Map to the format the frontend expects
-            mapped_data = {
-                'results': [{
-                    'name': data.get('city') or data.get('locality') or data.get('principalSubdivision'),
-                    'admin1': data.get('principalSubdivision'),
-                    'country_code': data.get('countryCode')
-                }]
-            }
-            return Response(mapped_data)
+            # Build detailed location string with multiple components
+            location_parts = []
+            
+            # Add specific location components in order of specificity
+            if data.get('locality'):
+                location_parts.append(data.get('locality'))
+            elif data.get('city'):
+                location_parts.append(data.get('city'))
+            
+            # Add neighborhood/area if available
+            if data.get('localityInfo', {}).get('administrative'):
+                admin_areas = data.get('localityInfo', {}).get('administrative', [])
+                for area in admin_areas[:2]:  # Take first 2 administrative areas
+                    if area.get('name') and area.get('name') not in location_parts:
+                        location_parts.append(area.get('name'))
+            
+            # Add district/region
+            if data.get('principalSubdivision') and data.get('principalSubdivision') not in location_parts:
+                location_parts.append(data.get('principalSubdivision'))
+            
+            # Add country for international locations
+            if data.get('countryName') and data.get('countryCode') != 'IN':
+                location_parts.append(data.get('countryName'))
+            
+            # Create detailed location name
+            detailed_name = ', '.join(location_parts) if location_parts else None
+            
+            if detailed_name:
+                mapped_data = {
+                    'results': [{
+                        'name': detailed_name,
+                        'admin1': data.get('principalSubdivision'),
+                        'country_code': data.get('countryCode'),
+                        'detailed_info': {
+                            'locality': data.get('locality'),
+                            'city': data.get('city'),
+                            'region': data.get('principalSubdivision'),
+                            'country': data.get('countryName'),
+                            'postcode': data.get('postcode')
+                        }
+                    }]
+                }
+                return Response(mapped_data)
+                
         except Exception as e:
-            print(f"Reverse geocode error: {e}")
-            return Response({'results': [], 'error': str(e)})
+            print(f"BigDataCloud geocode error: {e}")
+        
+        # Fallback: Try OpenStreetMap Nominatim for more detailed address
+        try:
+            res = requests.get(
+                f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&zoom=18&addressdetails=1",
+                headers={'User-Agent': 'WeatherApp/1.0'},
+                timeout=8
+            )
+            res.raise_for_status()
+            data = res.json()
+            
+            if data and 'address' in data:
+                address = data['address']
+                location_parts = []
+                
+                # Build detailed address from OSM data
+                if address.get('house_number') and address.get('road'):
+                    location_parts.append(f"{address.get('house_number')} {address.get('road')}")
+                elif address.get('road'):
+                    location_parts.append(address.get('road'))
+                
+                if address.get('neighbourhood'):
+                    location_parts.append(address.get('neighbourhood'))
+                elif address.get('suburb'):
+                    location_parts.append(address.get('suburb'))
+                
+                if address.get('city') or address.get('town') or address.get('village'):
+                    location_parts.append(address.get('city') or address.get('town') or address.get('village'))
+                
+                if address.get('state'):
+                    location_parts.append(address.get('state'))
+                
+                detailed_name = ', '.join(location_parts) if location_parts else data.get('display_name')
+                
+                if detailed_name:
+                    mapped_data = {
+                        'results': [{
+                            'name': detailed_name,
+                            'admin1': address.get('state'),
+                            'country_code': address.get('country_code', '').upper(),
+                            'detailed_info': {
+                                'road': address.get('road'),
+                                'neighbourhood': address.get('neighbourhood'),
+                                'city': address.get('city'),
+                                'state': address.get('state'),
+                                'postcode': address.get('postcode')
+                            }
+                        }]
+                    }
+                    return Response(mapped_data)
+                    
+        except Exception as e:
+            print(f"Nominatim geocode error: {e}")
+        
+        # Final fallback
+        return Response({
+            'results': [{
+                'name': f"Precise Location ({lat}, {lon})",
+                'admin1': '',
+                'country_code': ''
+            }]
+        })

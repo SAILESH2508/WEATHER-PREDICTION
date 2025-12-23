@@ -95,6 +95,7 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                     });
 
                     const geoRes = await Promise.race([geocodingPromise, timeoutPromise]);
+                    console.log('Detailed geocoding response:', geoRes.data); // Temporary debug
 
                     if (geoRes.data && geoRes.data.results && geoRes.data.results.length > 0) {
                         const result = geoRes.data.results[0];
@@ -265,9 +266,9 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                     fetchDefault();
                 },
                 { 
-                    enableHighAccuracy: false, 
-                    timeout: 10000,
-                    maximumAge: 300000
+                    enableHighAccuracy: true, // Enable high accuracy for precise location
+                    timeout: 15000, // Longer timeout for precise location
+                    maximumAge: 60000 // Shorter cache age for more current location
                 }
             );
         }, 500);
