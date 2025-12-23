@@ -242,10 +242,11 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
     const geocodeCache = useRef(new Map());
 
     const handleLocationClick = useCallback(async (autoNavigate = true) => {
-        console.log('handleLocationClick called with autoNavigate:', autoNavigate);
+        console.log('🎯 handleLocationClick called with autoNavigate:', autoNavigate);
         setIsGettingLocation(true);
         
         if (!navigator.geolocation) {
+            console.log('❌ Geolocation not supported');
             alert("Geolocation is not supported by this browser.");
             fetchDefault();
             setIsGettingLocation(false);
@@ -254,10 +255,12 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
 
         // Prevent multiple simultaneous requests
         if (isRequestingRef.current) {
-            console.log("Location request already in progress, skipping...");
+            console.log("⚠️ Location request already in progress, skipping...");
             setIsGettingLocation(false);
             return;
         }
+
+        console.log('🔄 Starting geolocation request...');
 
         // Clear any existing debounce timeout
         if (debounceTimeoutRef.current) {
@@ -266,20 +269,21 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
 
         // Debounce the geolocation request
         debounceTimeoutRef.current = setTimeout(() => {
+            console.log('⏰ Debounce timeout completed, calling geolocation API...');
             isRequestingRef.current = true;
             
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
-                    console.log('Got geolocation position:', pos.coords);
+                    console.log('✅ Got geolocation position:', pos.coords);
                     fetchWeatherForCoords(pos.coords, autoNavigate).finally(() => {
                         isRequestingRef.current = false;
                         setIsGettingLocation(false);
                     });
                 },
                 (error) => {
+                    console.log('❌ Geolocation error:', error.message);
                     isRequestingRef.current = false;
                     setIsGettingLocation(false);
-                    console.warn("Geolocation error:", error.message);
                     if (autoNavigate) alert("Unable to retrieve your location. Please check browser permissions.");
                     fetchDefault();
                 },
@@ -401,7 +405,7 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                         <span className="me-1">📍</span> 
                         <span className="me-2">{currentWeather.city}</span>
                         <button 
-                            className="btn btn-sm btn-outline-light border-0 rounded-circle p-1" 
+                            className="btn btn-sm btn-outline-light border-0 rounded-circle p-1 me-1" 
                             onClick={() => {
                                 console.log('Location button clicked!');
                                 handleLocationClick(true);
@@ -411,6 +415,19 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                             disabled={isGettingLocation}
                         >
                             {isGettingLocation ? '⏳' : '🎯'}
+                        </button>
+                        <button 
+                            className="btn btn-sm btn-outline-warning border-0 rounded-circle p-1" 
+                            onClick={() => {
+                                console.log('Test navigation button clicked!');
+                                const testCity = "Test Location (40.712°, -74.006°)";
+                                navigate(`/dashboard?lat=40.712&lon=-74.006&city=${encodeURIComponent(testCity)}`);
+                                if (closeSidebar) closeSidebar();
+                            }}
+                            title="Test navigation"
+                            style={{ fontSize: '0.6rem', width: '24px', height: '24px' }}
+                        >
+                            🧪
                         </button>
                     </div>
 
