@@ -99,50 +99,40 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
 
                     if (geoRes.data && geoRes.data.results && geoRes.data.results.length > 0) {
                         const result = geoRes.data.results[0];
-                        cityName = result.name;
-                        if (result.admin1 && result.admin1 !== result.name) {
-                            cityName += `, ${result.admin1}`;
-                        }
-                        console.log('Geocoded city name:', cityName);
-                        
-                        // Cache the result
-                        geocodeCache.current.set(cacheKey, {
-                            cityName,
-                            timestamp: Date.now()
-                        });
-                        
-                        // Limit cache size to prevent memory issues
-                        if (geocodeCache.current.size > 50) {
-                            const firstKey = geocodeCache.current.keys().next().value;
-                            geocodeCache.current.delete(firstKey);
+                        if (result.name) {
+                            cityName = result.name;
+                            if (result.admin1 && result.admin1 !== result.name) {
+                                cityName += `, ${result.admin1}`;
+                            }
+                            console.log('Geocoded city name:', cityName);
+                            
+                            // Cache the result
+                            geocodeCache.current.set(cacheKey, {
+                                cityName,
+                                timestamp: Date.now()
+                            });
+                            
+                            // Limit cache size to prevent memory issues
+                            if (geocodeCache.current.size > 50) {
+                                const firstKey = geocodeCache.current.keys().next().value;
+                                geocodeCache.current.delete(firstKey);
+                            }
                         }
                     } else {
                         console.log('No geocoding results found');
                     }
                 } catch (geoErr) {
-                    // Only log actual errors, not cancellations
-                    if (!signal.aborted && geoErr.name !== 'AbortError' && geoErr.code !== 'ECONNABORTED') {
-                        console.log("Geocoding unavailable, using coordinates");
-                    }
-                    // Try to get a basic location name from coordinates as fallback
-                    if (!cityName) {
-                        // Simple coordinate-based city naming as last resort
-                        const lat = coords.latitude;
-                        const lon = coords.longitude;
-                        
-                        // Very basic region detection (this is a fallback)
-                        if (lat >= 25 && lat <= 49 && lon >= -125 && lon <= -66) {
-                            cityName = `Location in USA (${lat.toFixed(2)}, ${lon.toFixed(2)})`;
-                        } else if (lat >= 49 && lat <= 60 && lon >= -141 && lon <= -52) {
-                            cityName = `Location in Canada (${lat.toFixed(2)}, ${lon.toFixed(2)})`;
-                        } else if (lat >= 6 && lat <= 37 && lon >= 68 && lon <= 97) {
-                            cityName = `Location in India (${lat.toFixed(2)}, ${lon.toFixed(2)})`;
-                        } else {
-                            cityName = `Your Location (${lat.toFixed(2)}, ${lon.toFixed(2)})`;
-                        }
-                        console.log('Using coordinate-based fallback city:', cityName);
-                    }
-                    // Continue without city name - we'll use coordinates or API response
+                    console.log("Geocoding failed:", geoErr.message);
+                }
+                
+                // If geocoding failed or returned no results, create a user-friendly location name
+                if (!cityName) {
+                    const lat = coords.latitude;
+                    const lon = coords.longitude;
+                    
+                    // Create a more user-friendly location name that clearly shows it's the user's location
+                    cityName = `My Location (${lat.toFixed(3)}°, ${lon.toFixed(3)}°)`;
+                    console.log('Using fallback location name:', cityName);
                 }
             }
 
@@ -186,11 +176,11 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                 }
             }
             
-            const displayCity = cityName || weatherRes.data.city || `${coords.latitude.toFixed(2)}, ${coords.longitude.toFixed(2)}`;
+            const displayCity = cityName || weatherRes.data.city || `Your Location (${coords.latitude.toFixed(3)}°, ${coords.longitude.toFixed(3)}°)`;
             console.log('Display city components:', {
                 cityName,
                 apiCity: weatherRes.data.city,
-                coordinates: `${coords.latitude.toFixed(2)}, ${coords.longitude.toFixed(2)}`,
+                coordinates: `${coords.latitude.toFixed(3)}°, ${coords.longitude.toFixed(3)}°`,
                 finalDisplayCity: displayCity
             });
 
@@ -217,7 +207,8 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                 console.error("Weather fetch error:", error.message);
                 
                 // Provide fallback data when API is unavailable
-                const fallbackCity = cityName || `${coords.latitude.toFixed(2)}, ${coords.longitude.toFixed(2)}`;
+                const fallbackCity = cityName || `My Location (${coords.latitude.toFixed(3)}°, ${coords.longitude.toFixed(3)}°)`;
+                console.log('Using error fallback city:', fallbackCity);
                 
                 setCurrentWeather({
                     temperature: '--',
