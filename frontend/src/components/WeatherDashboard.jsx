@@ -123,7 +123,7 @@ const WeatherDashboard = ({ locationName }) => {
         }
     }, []);
 
-    // Initial Fetch
+    // Main weather fetch effect
     useEffect(() => {
         const fetchWeather = async () => {
             const queryParams = new URLSearchParams(location.search);
@@ -136,14 +136,12 @@ const WeatherDashboard = ({ locationName }) => {
                 if (cityParam) {
                     cityParam = decodeURIComponent(cityParam);
                 }
-                
-                console.log('Dashboard URL params:', { lat, lon, cityParam, locationName });
 
                 // Default to Coimbatore if no params
                 if (!lat || !lon) {
                     lat = DEFAULT_LAT;
                     lon = DEFAULT_LON;
-                    cityParam = DEFAULT_CITY;
+                    cityParam = cityParam || DEFAULT_CITY;
                 }
 
                 let url = `${API_BASE_URL}/api/current/`;
@@ -212,8 +210,8 @@ const WeatherDashboard = ({ locationName }) => {
                     }
                 }
 
+                // Priority: URL parameter > API response > prop > default
                 const finalCity = cityParam || weatherData.city || locationName || DEFAULT_CITY;
-                console.log('Final city for display:', finalCity);
                 
                 setCurrentWeather({
                     ...weatherData,
