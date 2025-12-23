@@ -10,6 +10,7 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isGettingLocation, setIsGettingLocation] = useState(false);
 
     const [currentWeather, setCurrentWeather] = useState({ temperature: '--', condition: 'loading', city: 'Loading...' });
 
@@ -250,15 +251,20 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
     const geocodeCache = useRef(new Map());
 
     const handleLocationClick = useCallback(async (autoNavigate = true) => {
+        console.log('handleLocationClick called with autoNavigate:', autoNavigate);
+        setIsGettingLocation(true);
+        
         if (!navigator.geolocation) {
             alert("Geolocation is not supported by this browser.");
             fetchDefault();
+            setIsGettingLocation(false);
             return;
         }
 
         // Prevent multiple simultaneous requests
         if (isRequestingRef.current) {
             console.log("Location request already in progress, skipping...");
+            setIsGettingLocation(false);
             return;
         }
 
@@ -273,12 +279,15 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
             
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
+                    console.log('Got geolocation position:', pos.coords);
                     fetchWeatherForCoords(pos.coords, autoNavigate).finally(() => {
                         isRequestingRef.current = false;
+                        setIsGettingLocation(false);
                     });
                 },
                 (error) => {
                     isRequestingRef.current = false;
+                    setIsGettingLocation(false);
                     console.warn("Geolocation error:", error.message);
                     if (autoNavigate) alert("Unable to retrieve your location. Please check browser permissions.");
                     fetchDefault();
@@ -402,11 +411,15 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                         <span className="me-2">{currentWeather.city}</span>
                         <button 
                             className="btn btn-sm btn-outline-light border-0 rounded-circle p-1" 
-                            onClick={() => handleLocationClick(true)}
+                            onClick={() => {
+                                console.log('Location button clicked!');
+                                handleLocationClick(true);
+                            }}
                             title="Use my location"
                             style={{ fontSize: '0.7rem', width: '24px', height: '24px' }}
+                            disabled={isGettingLocation}
                         >
-                            🎯
+                            {isGettingLocation ? '⏳' : '🎯'}
                         </button>
                     </div>
 
