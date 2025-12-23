@@ -18,12 +18,13 @@ from rest_framework import status
 import pickle
 import json
 import numpy as np
+import pandas as pd
 import random
 from django.conf import settings
 
 # Heavy imports moved inside get_models() for lazy loading
 
-# Load models path
+# Load models path - models are in the same directory as manage.py
 MODEL_DIR = os.path.join(settings.BASE_DIR, 'ml_models')
 
 # Global cache for models
@@ -110,6 +111,14 @@ def get_models():
         _MODEL_CACHE['loaded'] = True 
         return {}
 
+class HealthCheckView(APIView):
+    """Simple health check endpoint for deployment verification."""
+    def get(self, request):
+        return Response({
+            'status': 'healthy',
+            'message': 'Backend is running'
+        })
+
 class BackendStatusView(APIView):
     """Diagnostic view for deployment verification."""
     def get(self, request):
@@ -191,7 +200,23 @@ class PredictLSTMView(APIView):
                 })
             return Response({'error': 'LSTM/Scaler not available'}, status=503)
         except Exception as e:
-            return Response({'error': str(e)}, status=400)
+            # Provide fallback prediction when models fail
+            temp = float(data.get('temperature', 25))
+            humidity = float(data.get('humidity', 60))
+            rainfall = float(data.get('rainfall', 0))
+            wind_speed = float(data.get('wind_speed', 10))
+            
+            # Simple heuristic-based prediction as fallback
+            predicted_temp = temp + random.uniform(-2, 3)  # ±2-3°C variation
+            predicted_rain = max(0, rainfall + random.uniform(-1, 2))  # Slight rain variation
+            
+            return Response({
+                'predicted_temperature': round(predicted_temp, 2),
+                'predicted_rainfall': round(predicted_rain, 2),
+                'method': 'Fallback (Models Unavailable)',
+                'error': str(e),
+                'fallback': True
+            })
 
 class PredictConditionView(APIView):
     def post(self, request):
@@ -283,7 +308,21 @@ class CurrentWeatherView(APIView):
                 'timestamp': pd.Timestamp.now().isoformat()
             })
         except Exception as e:
-            return Response({'error': str(e), 'fallback': True})
+            # Provide fallback data when external weather API fails
+            return Response({
+                'city': city,
+                'temperature': 25.0,  # Default temperature
+                'humidity': 65.0,     # Default humidity
+                'rainfall': 0.0,      # Default rainfall
+                'wind_speed': 12.0,   # Default wind speed
+                'description': 'API Unavailable',
+                'code': 0,
+                'hourly': {},
+                'daily': {},
+                'timestamp': pd.Timestamp.now().isoformat(),
+                'fallback': True,
+                'error': str(e)
+            })
 
 class MetricsView(APIView):
     def get(self, request):

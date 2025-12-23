@@ -47,12 +47,24 @@ const WeatherDashboard = ({ locationName }) => {
                 humidity: h,
                 rainfall: r,
                 wind_speed: w
+            }, {
+                timeout: 15000 // 15 second timeout for ML predictions
             });
             setPrediction(res.data);
         } catch (err) {
             console.error("Prediction Error:", err.message);
-            // Note: Removed retry logic to avoid linting issues
-            // The API should handle retries on the backend if needed
+            
+            // Provide fallback prediction when API is unavailable
+            const fallbackPrediction = {
+                prediction: "API Offline - Demo Mode",
+                confidence: "N/A",
+                temperature_tomorrow: Math.round(t + (Math.random() * 4 - 2)), // ±2°C variation
+                rainfall_tomorrow: Math.max(0, r + (Math.random() * 10 - 5)), // ±5mm variation
+                condition_tomorrow: "Partly Cloudy",
+                message: "Backend API is currently unavailable. Showing demo data."
+            };
+            
+            setPrediction(fallbackPrediction);
         }
     }, []);
 

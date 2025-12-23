@@ -17,8 +17,10 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
         setIsLoading(true);
         
         try {
-            // Default to Coimbatore
-            const res = await axios.get(`${API_BASE_URL}/api/current/?lat=11.0168&lon=76.9558&city=Coimbatore, Tamil Nadu, India`);
+            // Try to get weather data from API
+            const res = await axios.get(`${API_BASE_URL}/api/current/?lat=11.0168&lon=76.9558&city=Coimbatore, Tamil Nadu, India`, {
+                timeout: 10000 // 10 second timeout
+            });
             const defaultCity = res.data.city || 'Coimbatore, Tamil Nadu, India';
             setCurrentWeather({
                 temperature: Math.round(res.data.temperature),
@@ -29,9 +31,17 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
             });
             if (setLocationName) setLocationName(defaultCity);
         } catch (e) {
-            console.error(e);
+            console.error("API unavailable, using fallback data:", e.message);
+            
+            // Fallback to static data when API is completely unavailable
             const fallback = 'Coimbatore, Tamil Nadu, India';
-            setCurrentWeather(prev => ({ ...prev, city: fallback }));
+            setCurrentWeather({
+                temperature: '25',
+                condition: 'API Offline - Demo Mode',
+                city: fallback,
+                humidity: '65',
+                wind_speed: '12'
+            });
             if (setLocationName) setLocationName(fallback);
         } finally {
             setIsLoading(false);
@@ -265,9 +275,11 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
         };
     }, []);
 
-    // Initial load - legitimate initialization on mount
+    // Initial load - only fetch default location, don't request geolocation automatically
     useEffect(() => {
-        handleLocationClick(false);
+        // Don't auto-request geolocation to avoid browser violations
+        // Just load default location
+        fetchDefault();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Empty deps - this should only run once on mount
 
@@ -354,8 +366,17 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                         {isLoading ? 'Loading weather...' : currentWeather.condition}
                     </span>
 
-                    <div className="d-flex align-items-center text-white-50 small mb-3">
-                        <span className="me-1">📍</span> {currentWeather.city}
+                    <div className="d-flex align-items-center justify-content-center text-white-50 small mb-3">
+                        <span className="me-1">📍</span> 
+                        <span className="me-2">{currentWeather.city}</span>
+                        <button 
+                            className="btn btn-sm btn-outline-light border-0 rounded-circle p-1" 
+                            onClick={() => handleLocationClick(true)}
+                            title="Use my location"
+                            style={{ fontSize: '0.7rem', width: '24px', height: '24px' }}
+                        >
+                            🎯
+                        </button>
                     </div>
 
                     <div className="row w-100 g-2 mt-1">
