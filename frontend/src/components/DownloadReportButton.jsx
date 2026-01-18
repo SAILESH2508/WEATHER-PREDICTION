@@ -1,6 +1,6 @@
 import React from 'react';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 const DownloadReportButton = ({ weatherData, predictionData, hourlyData, locationName }) => {
     const generatePDF = () => {
@@ -46,7 +46,7 @@ const DownloadReportButton = ({ weatherData, predictionData, hourlyData, locatio
                 ['Rainfall', `${rain} mm`],
             ];
 
-            doc.autoTable({
+            autoTable(doc, {
                 startY: yPos,
                 head: [['Metric', 'Value']],
                 body: currentData,
@@ -91,7 +91,7 @@ const DownloadReportButton = ({ weatherData, predictionData, hourlyData, locatio
                 ]);
             }
 
-            doc.autoTable({
+            autoTable(doc, {
                 startY: yPos,
                 head: [['Time', 'Temp', 'Rain', 'Code']],
                 body: rows,
@@ -132,7 +132,7 @@ const DownloadReportButton = ({ weatherData, predictionData, hourlyData, locatio
                 predictionRows.push(['ALERTS', predictionData.alerts.join(', '), '']);
             }
 
-            doc.autoTable({
+            autoTable(doc, {
                 startY: yPos,
                 head: [['Type', 'Predicted Temp', 'Predicted Rain']],
                 body: predictionRows,

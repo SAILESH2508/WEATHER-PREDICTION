@@ -100,12 +100,12 @@ const WeatherDashboard = ({ locationName }) => {
                 rainfall: r,
                 wind_speed: w
             }, {
-                timeout: 1500 // Very short timeout
+                timeout: 3000 // Increased timeout for better stability
             });
 
             const res = await fastCall;
             const data = res.data;
-            
+
             setPrediction({
                 prediction: "AI Weather Prediction",
                 confidence: "High",
@@ -118,7 +118,7 @@ const WeatherDashboard = ({ locationName }) => {
 
         } catch (err) {
             console.log("API prediction failed, using smart fallback:", err.message);
-            
+
             // Use smart fallback immediately
             const fallbackPrediction = createFallbackPrediction();
             setPrediction(fallbackPrediction);
@@ -133,7 +133,7 @@ const WeatherDashboard = ({ locationName }) => {
                 let lat = queryParams.get('lat');
                 let lon = queryParams.get('lon');
                 let cityParam = queryParams.get('city');
-                
+
                 // Decode the city parameter if it exists
                 if (cityParam) {
                     cityParam = decodeURIComponent(cityParam);
@@ -214,7 +214,7 @@ const WeatherDashboard = ({ locationName }) => {
 
                 // Priority: URL parameter > API response > prop > default
                 const finalCity = cityParam || weatherData.city || locationName || DEFAULT_CITY;
-                
+
                 setCurrentWeather({
                     ...weatherData,
                     city: finalCity
@@ -362,9 +362,9 @@ const WeatherDashboard = ({ locationName }) => {
                                         <>
                                             <h4 className="mb-3 text-center text-white">
                                                 Condition: <span className="badge bg-warning text-dark fs-6">
-                                                    {prediction.condition_tomorrow || 
-                                                     prediction.classification || 
-                                                     (prediction.predicted_rainfall && prediction.predicted_rainfall > 0 ? 'Rainy' : 'Sunny')}
+                                                    {prediction.condition_tomorrow ||
+                                                        prediction.classification ||
+                                                        (prediction.predicted_rainfall && prediction.predicted_rainfall > 0 ? 'Rainy' : 'Sunny')}
                                                 </span>
                                             </h4>
 
@@ -397,7 +397,7 @@ const WeatherDashboard = ({ locationName }) => {
                                                         datasets: [{
                                                             label: 'Predicted Values',
                                                             data: [
-                                                                prediction.predicted_temperature || 0, 
+                                                                prediction.predicted_temperature || 0,
                                                                 prediction.predicted_rainfall || 0
                                                             ],
                                                             backgroundColor: ['rgba(255, 206, 86, 0.7)', 'rgba(54, 162, 235, 0.7)'],

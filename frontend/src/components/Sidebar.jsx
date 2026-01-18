@@ -16,7 +16,7 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
 
     const fetchDefault = useCallback(async () => {
         setIsLoading(true);
-        
+
         try {
             // Try to get weather data from API
             const res = await axios.get(`${API_BASE_URL}/api/current/?lat=11.0168&lon=76.9558&city=Coimbatore, Tamil Nadu, India`, {
@@ -33,7 +33,7 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
             if (setLocationName) setLocationName(defaultCity);
         } catch (e) {
             console.error("API unavailable, using fallback data:", e.message);
-            
+
             // Fallback to static data when API is completely unavailable
             const fallback = 'Coimbatore, Tamil Nadu, India';
             setCurrentWeather({
@@ -52,16 +52,16 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
     const fetchWeatherForCoords = useCallback(async (coords, autoNavigate) => {
         setIsLoading(true);
         let cityName = ''; // Move declaration outside try block
-        
+
         try {
             // Cancel any previous geocoding request
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
             }
-            
+
             // Create cache key for coordinates (rounded to avoid too many cache entries)
             const cacheKey = `${coords.latitude.toFixed(3)},${coords.longitude.toFixed(3)}`;
-            
+
             // Check cache first
             if (geocodeCache.current.has(cacheKey)) {
                 const cachedData = geocodeCache.current.get(cacheKey);
@@ -73,25 +73,25 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                     geocodeCache.current.delete(cacheKey);
                 }
             }
-            
+
             // Only geocode if not in cache
             if (!cityName) {
                 // Create a new abort controller for this request
                 abortControllerRef.current = new AbortController();
                 const signal = abortControllerRef.current.signal;
-                
+
                 try {
                     // Use a race between the request and a timeout
                     const geocodingPromise = axios.get(
                         `${API_BASE_URL}/api/reverse-geocode/?latitude=${coords.latitude}&longitude=${coords.longitude}`,
-                        { 
+                        {
                             signal,
                             timeout: 5000 // Increased timeout for better geocoding
                         }
                     );
 
                     const timeoutPromise = new Promise((_, reject) => {
-                        setTimeout(() => reject(new Error('Geocoding timeout')), 4500);
+                        setTimeout(() => reject(new Error('Geocoding timeout')), 12000);
                     });
 
                     const geoRes = await Promise.race([geocodingPromise, timeoutPromise]);
@@ -100,11 +100,11 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                     if (geoRes.data && geoRes.data.results && geoRes.data.results.length > 0) {
                         const result = geoRes.data.results[0];
                         console.log('Geocoded city name:', result.name);
-                        
+
                         // Enhanced city name processing
                         if (result.name) {
                             cityName = result.name;
-                            
+
                             // Log precision and source information
                             console.log('Display city components:', {
                                 cityName: result.name,
@@ -114,13 +114,13 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                                 precision: result.precision || 'unknown',
                                 source: result.source || 'unknown'
                             });
-                            
+
                             // Cache the result
                             geocodeCache.current.set(cacheKey, {
                                 cityName,
                                 timestamp: Date.now()
                             });
-                            
+
                             // Limit cache size to prevent memory issues
                             if (geocodeCache.current.size > 50) {
                                 const firstKey = geocodeCache.current.keys().next().value;
@@ -132,12 +132,12 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                     console.error('Geocoding failed:', geoErr.message);
                     // Geocoding failed, will use fallback
                 }
-                
+
                 // If geocoding failed or returned no results, create a user-friendly location name
                 if (!cityName) {
                     const lat = coords.latitude;
                     const lon = coords.longitude;
-                    
+
                     // Create a more user-friendly location name that clearly shows it's the user's location
                     cityName = `My Location (${lat.toFixed(3)}°, ${lon.toFixed(3)}°)`;
                 }
@@ -145,44 +145,44 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
 
             // Proceed with weather request regardless of geocoding result
             const cityParam = cityName || '';
-            
+
             // Implement retry logic for weather API
             let weatherRes;
             let retryCount = 0;
             const maxRetries = 3;
-            
+
             while (retryCount <= maxRetries) {
                 try {
                     const timeoutDuration = 8000 + (retryCount * 2000); // Increase timeout with each retry
-                    
+
                     weatherRes = await axios.get(
                         `${API_BASE_URL}/api/current/?lat=${coords.latitude}&lon=${coords.longitude}&city=${encodeURIComponent(cityParam)}`,
-                        { 
+                        {
                             signal: abortControllerRef.current?.signal,
-                            timeout: timeoutDuration
+                            timeout: timeoutDuration + 5000 // Add a buffer
                         }
                     );
                     break; // Success, exit retry loop
-                    
+
                 } catch (weatherErr) {
                     retryCount++;
-                    
+
                     if (abortControllerRef.current?.signal.aborted) {
                         throw weatherErr; // Don't retry if aborted
                     }
-                    
+
                     if (retryCount > maxRetries) {
                         console.error(`Weather API failed after ${maxRetries} retries:`, weatherErr.message);
                         throw weatherErr;
                     }
-                    
+
                     console.log(`Weather API retry ${retryCount}/${maxRetries} after error:`, weatherErr.message);
-                    
+
                     // Wait before retry (exponential backoff)
                     await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
                 }
             }
-            
+
             const displayCity = cityName || weatherRes.data.city || `Your Location (${coords.latitude.toFixed(3)}°, ${coords.longitude.toFixed(3)}°)`;
 
             console.log('Set location name to:', displayCity);
@@ -194,7 +194,7 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                 humidity: weatherRes.data.humidity,
                 wind_speed: weatherRes.data.wind_speed
             });
-            
+
             if (setLocationName) setLocationName(displayCity);
 
             if (autoNavigate) {
@@ -206,10 +206,10 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
             // Only log if not aborted
             if (!abortControllerRef.current?.signal.aborted) {
                 console.error("Weather fetch error:", error.message);
-                
+
                 // Provide fallback data when API is unavailable
                 const fallbackCity = cityName || `My Location (${coords.latitude.toFixed(3)}°, ${coords.longitude.toFixed(3)}°)`;
-                
+
                 setCurrentWeather({
                     temperature: '--',
                     condition: 'API Unavailable',
@@ -217,19 +217,19 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                     humidity: '--',
                     wind_speed: '--'
                 });
-                
+
                 if (setLocationName) setLocationName(fallbackCity);
-                
+
                 // Still navigate if requested, even with fallback data
                 if (autoNavigate) {
                     navigate(`/dashboard?lat=${coords.latitude}&lon=${coords.longitude}&city=${encodeURIComponent(fallbackCity)}`);
                     if (closeSidebar) closeSidebar();
                 }
-                
+
                 // Don't call fetchDefault if we have coordinates - use the fallback instead
                 return;
             }
-            
+
             // Only fall back to default location if request was aborted or no coordinates
             fetchDefault();
         } finally {
@@ -243,9 +243,8 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
 
     const handleLocationClick = useCallback(async (autoNavigate = true) => {
         console.log('Location button clicked!');
-        console.log('🎯 handleLocationClick called with autoNavigate:', autoNavigate);
         setIsGettingLocation(true);
-        
+
         if (!navigator.geolocation) {
             alert("Geolocation is not supported by this browser.");
             fetchDefault();
@@ -255,7 +254,6 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
 
         // Prevent multiple simultaneous requests
         if (isRequestingRef.current) {
-            setIsGettingLocation(false);
             return;
         }
 
@@ -264,62 +262,69 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
             clearTimeout(debounceTimeoutRef.current);
         }
 
-        console.log('🔄 Starting geolocation request...');
+        isRequestingRef.current = true;
 
-        // Debounce the geolocation request
-        debounceTimeoutRef.current = setTimeout(() => {
-            console.log('⏰ Debounce timeout completed, calling geolocation API...');
-            isRequestingRef.current = true;
-            
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    console.log('✅ Got geolocation position:', pos.coords);
-                    console.log('🎯 ULTRA-PRECISE GPS Coordinates:', {
-                        latitude: pos.coords.latitude,
-                        longitude: pos.coords.longitude,
-                        accuracy: pos.coords.accuracy,
-                        altitudeAccuracy: pos.coords.altitudeAccuracy,
-                        heading: pos.coords.heading,
-                        speed: pos.coords.speed,
-                        timestamp: new Date(pos.timestamp).toLocaleString(),
-                        precision: pos.coords.accuracy < 10 ? 'Very High' : pos.coords.accuracy < 50 ? 'High' : 'Medium'
-                    });
-                    fetchWeatherForCoords(pos.coords, autoNavigate).finally(() => {
-                        isRequestingRef.current = false;
-                        setIsGettingLocation(false);
-                    });
-                },
-                (error) => {
-                    console.error('❌ Geolocation error:', error);
-                    isRequestingRef.current = false;
-                    setIsGettingLocation(false);
-                    
-                    let errorMessage = "Unable to retrieve your location. ";
-                    switch(error.code) {
-                        case error.PERMISSION_DENIED:
-                            errorMessage += "Please allow location access in your browser settings.";
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            errorMessage += "Location information is unavailable. Try moving to an area with better GPS signal.";
-                            break;
-                        case error.TIMEOUT:
-                            errorMessage += "Location request timed out. Please try again.";
-                            break;
-                        default:
-                            errorMessage += "An unknown error occurred.";
-                            break;
-                    }
-                    
-                    if (autoNavigate) alert(errorMessage);
-                    fetchDefault();
-                },
-                { 
-                    enableHighAccuracy: true,    // Enable high accuracy for precise location
-                    timeout: 20000,              // Longer timeout for precise location (20 seconds)
-                    maximumAge: 30000            // Shorter cache age for more current location (30 seconds)
-                }
-            );
-        }, 500);
+        const getPosition = (options) => {
+            return new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, options);
+            });
+        };
+
+        try {
+            let pos;
+            try {
+                console.log('🔄 Attempting High Accuracy Location...');
+                // Try high accuracy first with a short timeout
+                pos = await getPosition({
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 0
+                });
+                console.log('✅ High precision location acquired');
+            } catch (err) {
+                console.warn('⚠️ High accuracy failed, switching to standard accuracy...', err.message);
+                // Fallback to low accuracy (WiFi/Cell tower) with longer timeout
+                pos = await getPosition({
+                    enableHighAccuracy: false,
+                    timeout: 10000,
+                    maximumAge: 60000 // Accept positions up to 1 minute old
+                });
+                console.log('✅ Standard precision location acquired');
+            }
+
+            console.log('🎯 Coordinates:', {
+                lat: pos.coords.latitude,
+                lon: pos.coords.longitude,
+                accuracy: pos.coords.accuracy
+            });
+
+            await fetchWeatherForCoords(pos.coords, autoNavigate);
+
+        } catch (error) {
+            console.error('❌ All geolocation attempts failed:', error);
+
+            let errorMessage = "Unable to retrieve your location. ";
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage += "Please allow location access in your browser settings.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage += "Location information is unavailable.";
+                    break;
+                case error.TIMEOUT:
+                    errorMessage += "Location request timed out. Please check your connection.";
+                    break;
+                default:
+                    errorMessage += "An unknown error occurred.";
+                    break;
+            }
+
+            if (autoNavigate) alert(errorMessage);
+            fetchDefault();
+        } finally {
+            isRequestingRef.current = false;
+            setIsGettingLocation(false);
+        }
     }, [fetchDefault, fetchWeatherForCoords]);
 
     useEffect(() => {
@@ -428,10 +433,10 @@ const Sidebar = ({ setLocationName, isOpen, closeSidebar }) => {
                     </span>
 
                     <div className="d-flex align-items-center justify-content-center text-white-50 small mb-3">
-                        <span className="me-1">📍</span> 
+                        <span className="me-1">📍</span>
                         <span className="me-2">{currentWeather.city}</span>
-                        <button 
-                            className="btn btn-sm btn-outline-light border-0 rounded-circle p-1" 
+                        <button
+                            className="btn btn-sm btn-outline-light border-0 rounded-circle p-1"
                             onClick={() => handleLocationClick(true)}
                             title="Use my location"
                             style={{ fontSize: '0.7rem', width: '24px', height: '24px' }}

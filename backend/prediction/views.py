@@ -430,7 +430,7 @@ class ReverseGeocodeView(APIView):
             res = requests.get(
                 f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&zoom=18&addressdetails=1&extratags=1",
                 headers={'User-Agent': 'WeatherApp/1.0 (High-Precision Location)'},
-                timeout=10
+                timeout=12
             )
             res.raise_for_status()
             data = res.json()
@@ -501,7 +501,7 @@ class ReverseGeocodeView(APIView):
             print("🔍 Trying BigDataCloud with enhanced precision...")
             res = requests.get(
                 f"https://api.bigdatacloud.net/data/reverse-geocode-client?latitude={lat}&longitude={lon}&localityLanguage=en",
-                timeout=10
+                timeout=12
             )
             res.raise_for_status()
             data = res.json()
